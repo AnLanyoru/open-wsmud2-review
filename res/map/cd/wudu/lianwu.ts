@@ -1,0 +1,7 @@
+this.inherits(ROOM);
+this.name = "练武场";
+this.desc = "这里是院内的练武场，黄土场地上摆放着一些练功的石锁，沙袋。一个小头目正在指导弟子练武。";
+
+this.exits = {"west": "cd/wudu/damen", "south": "cd/wudu/nanyuan", "east": "cd/wudu/dating"};
+
+this.set_npc("cd/wudu/npc08");
