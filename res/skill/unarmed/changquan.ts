@@ -1,11 +1,14 @@
-﻿this.inherits(SKILL);
-this.name = "太祖长拳";
-this.id = "taizuchangquan";
-this.grade = 1;
+import { SKILL, PERFORM } from "../../../core/skill/skill.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { WEAPON_TYPE } from "../../../core/const.js";
 
-this.is_public = true;
-this.family = FAMILIES.GAIBANG;
-this.attack_actions = [
+export default class extends SKILL {
+    name = "太祖长拳";
+    id = "taizuchangquan";
+    grade = 1;
+    is_public = true;
+    family = FAMILIES.GAIBANG;
+    attack_actions = [
     "只见$N身形一矮，大喝声中一个『冲天炮』对准$n的鼻子呼地砸了过去",
     "$N左手一分，右拳运气，一招『拔草寻蛇』便往$n的$l招呼过去",
     "$N右拳在$n面门一晃，左掌使了个『叶底偷桃』往$n的$l狠命一抓",
@@ -35,24 +38,15 @@ this.attack_actions = [
     "$N向前一招『双龙探爪』，双手变掌为爪，先右後左，连续向$n的$l击出",
     "$N向前一窜，『猛虎出洞』将左刁手向後回勾，与右刁手同置身后再刁撇而出"
 ];
-this.desc = "相传为宋太祖赵匡胤所创，以攻击迅猛直来直去为其特征，在江湖中颇有声誉";
-//"(\w+)"(.+?)"NOR"
-//<$1>$2</$1>
-this.can_enables = ["unarmed"];
-this.learn_condition = {
+    desc = "相传为宋太祖赵匡胤所创，以攻击迅猛直来直去为其特征，在江湖中颇有声誉";
+    can_enables = ["unarmed"];
+    learn_condition = {
     max_mp: 200,
     skill: {
         unarmed: 100
     }
 };
-this.query_enable_prop = function (lv) {
-    return {
-        unarmed: {
-            gj: lv * 1 + 20
-        }
-    };
-}
-this.slots = [
+    slots = [
     {
         prop: "tzcq_sh",
         value: lv => lv / 100,
@@ -67,7 +61,7 @@ this.slots = [
         }
     }
 ];
-this.pfm = {
+    pfm_set = {
     zhen:
     {
         name: "太祖八式",
@@ -76,7 +70,7 @@ this.pfm = {
         weapon_type: WEAPON_TYPE.UNARMED,
         mp: 20,
         release_time: 8000,
-        use: function (me, target, lv) {
+        use: function (this: PERFORM, me, target, lv) {
 
             me.send_room("<hiy>只见$N跨立马步，稳定下盘，双拳有章有法的依次击向$n全身各处。</hiy>", target);
             target = null;
@@ -84,7 +78,7 @@ this.pfm = {
             var txt = ["一", "二", "三", "四", "五", "六", "七", "八"];
 
             let gj = me.gj + me.gj * me.query_prop('tzcq_sh') / 100;
-            var time = this.query_releasetime(me, lv);
+            var time = this.query_releasetime?.(me, lv) ?? 0;
             time -= time * me.query_prop('tzcq_rt') / 100;
             if (time > 80) {
                 me.is_rash = time;
@@ -127,9 +121,19 @@ this.pfm = {
 
 
         },
-        query_desc: function (me, lv) {
-            var t = this.query_releasetime(me, lv);
+        query_desc: function (this: PERFORM, me, lv) {
+            var t = this.query_releasetime?.(me, lv) ?? 0;
             return "跨立马步，稳定下盘，放弃防御专注进攻，" + Math.floor(t / 100) / 10 + "秒内快速出拳8次，攻击期间你无法躲闪";
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        unarmed: {
+            gj: lv * 1 + 20
+        }
+    };
+}
+}
+

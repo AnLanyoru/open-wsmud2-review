@@ -1,14 +1,14 @@
-﻿this.inherits(OBJ);
-this.set({
-    unit: "株",
-    name: "当归",
-    desc: "这是一株草药",
-    value: 1000,
-    transable: true,
-});
-this.otype = 3;
+import { OBJ } from "../../../core/item/obj.js";
 
-this.on_create = function (path, par) {
+export default class extends OBJ {
+    unit = "株";
+    name = "当归";
+    desc = "这是一株草药";
+    value = 1000;
+    transable = true;
+    otype = 3;
+
+    on_create(path, par) {
     if (!par) return;
     par = par.substr(1);
     var lv = parseInt(par);
@@ -18,9 +18,8 @@ this.on_create = function (path, par) {
         "神血藤", "龙鳞草", "沉天叶", "轮回蛊", "凤鸣花"][lv];
     this.grade = parseInt(lv / 3);
     if (this.grade > 6) this.grade = 6;
+    if (this.grade === 6) this.desc = "这是一株神奇的药草，可以炼制出传说中的神丹";
     this.value = [100, 1000, 5000, 10000, 50000, 100000, 680000][this.grade];
-    this.desc = this.grade === 6
-        ? "这是一株神奇的" + this.name + "，可以炼制出传说中的神丹"
-        : "这是一株" + this.name;
 
+}
 }

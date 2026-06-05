@@ -1,10 +1,19 @@
-﻿this.inherits(COMMAND);
-this.command = "cha,skills";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_faint = true;
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { SKILL } from "../../../core/skill/skill.js";
+
+export default class extends COMMAND {
+    command = "cha,skills";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_faint = true;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg) {
     var target = me;
     var isfollower = false;
     if (arg) {
@@ -30,14 +39,13 @@ this.enter = function (me, arg) {
     }
     this.render_skill(me, target, isfollower);
 }
-
-this.render_skill = function (me, target, isfollower) {
+    render_skill(me, target, isfollower) {
     var skills = target.skills;
     var str = ['{"type":"dialog","dialog":"'];
     str.push(me === target ? 'skills' : 'master');
     str.push('","items":[');
+    var skill_count = 0;
     if (skills) {
-        var skill_count = 0;
         for (var skid in skills) {
             var skill_base = SKILL.get(skid);
             if (!skill_base) continue;
@@ -68,9 +76,11 @@ this.render_skill = function (me, target, isfollower) {
             str.push("\"");
         }
     } else {
-        str.push(',sk_group:', WORLD.COMMANDS.skgroup.cur_eqs(me));
+        str.push(',sk_group:', String(WORLD.COMMANDS.skgroup.cur_eqs?.(me) ?? 0));
     }
 
     str.push("}");
     me.send(str.join(""));
 }
+}
+

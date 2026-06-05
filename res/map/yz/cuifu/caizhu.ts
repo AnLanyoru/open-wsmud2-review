@@ -1,15 +1,24 @@
-﻿this.inherits(ROOM);
-this.name = "大门"
-this.desc = "一座富丽堂皇的大宅院出现在你的眼前，两头高大的石狮子镇住了大门两侧，朱漆大门足足有三寸厚。门上挂着两个灯笼，写着“崔”字。崔家是当地首富，而且以蛮横著称。几条狼狗嚎叫着向你冲了过来。";
-this.exits = { "north": "yz/cuifu/dayuan" };
-this.set_npc([
-    "yz/cuifu/langgou", 2
-]);
-this.on_enter = function (me) {
+import { ROOM } from "../../../../core/room/room.js";
+import type {NPC} from "../../../../core/char/npc";
+import type {USER} from "../../../../core/char/user";
+
+export default class extends ROOM {
+    name = "大门";
+    desc = "一座富丽堂皇的大宅院出现在你的眼前，两头高大的石狮子镇住了大门两侧，朱漆大门足足有三寸厚。门上挂着两个灯笼，写着“崔”字。崔家是当地首富，而且以蛮横著称。几条狼狗嚎叫着向你冲了过来。";
+    exits = { "north": "yz/cuifu/dayuan" };
+
+    constructor() {
+        super();
+        this.set_npc([
+            "yz/cuifu/langgou", 2
+        ]);
+    }
+
+    on_enter(me: NPC) {
     if (me.is("yz/cuifu/yahuan")) {
-        var player = me.follow_target;
+        var player = me.follow_target as USER;
         if (!player || !player.is_here(me)) return;
-        if (player.can_follow(me)) {
+        if ( player.can_follow(me)) {
             me.do_follow(null);
             player.notify("眼看就要走到门外，丫鬟却站在原地不动了。");
             player.notify("丫鬟垂首说道：这位大人，小女子已无家可归，还望大人收留！");
@@ -25,4 +34,5 @@ this.on_enter = function (me) {
         player.add_fbscore(20);
 
     }
+}
 }

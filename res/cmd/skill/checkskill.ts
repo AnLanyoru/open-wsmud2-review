@@ -1,11 +1,21 @@
-﻿this.inherits(COMMAND);
-this.command = "checkskill";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.regex = /^(\w+)(?:\s(\w+))?$/;
-const num_reg = /^\d+$/;
-this.enter = function (player, skid, from) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { SKILL } from "../../../core/skill/skill.js";
+
+export default class extends COMMAND {
+    command = "checkskill";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    regex = /^(\w+)(?:\s(\w+))?$/;
+
+    /**
+     * @param  player - 执行命令的角色
+     * @param skid
+     * @param from
+     */
+    enter(player, skid, from) {
     var skill_base = SKILL.get(skid);
     if (!skill_base) {
         return player.send("没有这个技能。");
@@ -31,13 +41,17 @@ this.enter = function (player, skid, from) {
             }
         }
     }
-    var obj = {};
-    obj.type = "dialog";
-    obj.dialog = "skills";
+    var obj  = {
+        type: "dialog",
+        dialog: "skills",
+        id: skid,
+        desc: skill_base.query_desc(target, target.query_skill(skid, 1000)),
+    };
     if (skill_base.is_custom)
         obj.is_custom = 1;
-    obj.id = skid;
     if (!target.skills) target.skills = {};
-    obj.desc = skill_base.query_desc(target, target.query_skill(skid, 1000));
     return player.send(JSON.stringify(obj));
 }
+}
+
+const num_reg = /^\d+$/;
