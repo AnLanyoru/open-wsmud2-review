@@ -1,9 +1,20 @@
-﻿
-this.inherits(COMMAND);
-this.command = "cr";
-this.allow_fight = true;
-//this.allow_busy = true;
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { OBJ } from "../../../core/item/obj.js";
+import { UTIL } from "../../../core/util";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { AREA } from "../../../core/room/area.js";
+import { ROOM } from "../../../core/room/room.js";
+
+export default class extends COMMAND {
+    command = "cr";
+    allow_fight = true;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg) {
     if (!me.environment) return;
 
     if (!arg) {
@@ -15,6 +26,8 @@ this.enter = function (me, arg) {
         fb_start(me, arg);
     }
 }
+}
+
 function fb_ok(me) {
     var r = me.query_temp("teamcr");
     if (r == 1) {
@@ -47,7 +60,7 @@ function fb_saodang(me, path, isdiff, count) {
     if (!fb) {
         return me.notify("没有这个副本!");
     }
-    let next_room = ROOM.Get(fb.first);
+    let next_room = ROOM.Get(fb.first ?? '');
     if (!next_room) {
         return me.notify("没有这个房间");
     }
@@ -58,6 +71,7 @@ function fb_saodang(me, path, isdiff, count) {
 
     if (me.is_full(-10)) return me.notify("你身上东西太多了!");
     var area = next_room.parent;
+    if (!area) return me.notify("区域错误");
     var unlock_name = isdiff ? "fb_sao1" : "fb_sao0";
     if (area.unlock_index) {
         if (me.query_temp('fb_sao' + area.fb_index, 0) !== (isdiff ? 2 : 1))
@@ -77,7 +91,6 @@ function fb_saodang(me, path, isdiff, count) {
         me.notify(area.name + "扫荡完成。");
     });
 }
-
 function fb_quick(me, area, isdiff) {
 
     var drops = area.query_drops(isdiff, me);
@@ -181,7 +194,7 @@ function fb_start(me, path) {
     if (!fb) {
         return me.notify("没有这个副本!");
     }
-    var next_room = ROOM.Get(fb.first);
+    var next_room = ROOM.Get(fb.first ?? '');
     if (!next_room) {
         return me.notify("没有这个副本!");
     }
@@ -216,12 +229,12 @@ function fb_start(me, path) {
     if (copy_room) {
         next_room = copy_room;
         if (me.team) {
-            if (copy_room.query_temp(me, me.id) == 1) {
+            if (copy_room.query_temp(me.id, me) == 1) {
                 return me.notify("你已经完成副本，必须等其他队员也完成后才可以重新进入。");
             }
             if (me.expend_jingli(fb.expend) == false) { return me.notify("你的精力不够，无法副本。"); }
             //记录这个玩家进入副本的标志，防止重复进入
-            copy_room.set_temp(me, me.id, 1);
+            copy_room.set_temp(me.id, 1, me);
         } else {
             if (diff_type == 2)
                 return me.notify("你需要组队才可以进入副本。");
@@ -236,9 +249,9 @@ function fb_start(me, path) {
         if (!next_room) {
             return me.notify("副本创建失败。");
         }
-        next_room.set_temp(me, "diff", diff_type);
+        next_room.set_temp("diff", diff_type, me);
         if (me.team) {
-            next_room.set_temp(me, me.id, 1);
+            next_room.set_temp(me.id, 1, me);
             for (var i = 0; i < me.team.length; i++) {
                 var tm = me.team[i];
                 if (tm != me && tm.is_player) {
@@ -250,7 +263,7 @@ function fb_start(me, path) {
         }
 
         if (!me.team || me.team[0] === me) {
-            WORLD.COMMANDS['ex'].on_enter_fb(me, next_room);
+            WORLD.COMMANDS['ex']?.on_enter_fb?.(me, next_room);
         }
     }
     me.send('{type:"dialog",dialog:"jh",close:true}');
@@ -271,13 +284,17 @@ function fb_start(me, path) {
 function fb_over(me) {
     if (!me.environment || !me.environment.is_fb()) return;
     var area = me.environment.parent;
-    var reward = query_fb_reward(me, area);
-    var p = reward.percent;
-    var exp = reward.exp;
-    var pot = reward.pot;
+    var score = me.query_fbscore();
+    var max_score = area.score || 100;
+    var max_exp = area.query_exp();
+    var p = parseInt(score * 100 / max_score);
+    if (p <= 0) p = 0;
+    if (p > 100) p = 100;
+    var exp = max_exp * p / 100;
+    var pot = max_exp * p / 100;
 
     var fb = me.environment;
-    var diff = fb.query_temp(me, "diff") || 0;
+    var diff = fb.query_temp("diff", undefined, me) || 0;
     if (me.moveto(me.query_temp("enter_room"), me.name + "离开了副本。", me.name + "走了过来。") != false) {
 
         if (me.team && me.environment.parent.id !== 'home') {
@@ -348,9 +365,6 @@ function fb_over(me) {
         }
         if (diff != 2) {
             if (me.follow_targets && me.follow_targets.length) {
-                for (let item of me.follow_targets) {
-                    item.follow_target = null;
-                }
                 me.follow_targets.length = 0;
             }
         }
@@ -379,8 +393,6 @@ function fb_over(me) {
         me.notify("你现在还不能离开副本。");
     }
 }
-
-
 function fb_first_check(me, fb, area, diff) {
     if (me.family === FAMILIES.NONE && !me.query_temp('sr')) {
         return;//无门无派的非长期散人不参与
@@ -394,7 +406,7 @@ function fb_first_check(me, fb, area, diff) {
     if (diff === 2) fb_fam_key = fb_key;
     if (WORLD.DATA.query_temp(fb_fam_key)) return;//这个门派已经拿过了
     var fb_key2 = "fb_first_" + fblock;
-    var ss_users = WORLD.DATA.query_temp(fb_key2);
+    var ss_users = String(WORLD.DATA.query_temp(fb_key2) ?? '');
     var teams = me.team || [me];
     if (ss_users) {
         for (var i = 0; i < teams.length; i++) {
@@ -423,10 +435,10 @@ function fb_first_check(me, fb, area, diff) {
             me.send("<hig>你获得了称号【" + area.ss_title + "】。</hig>");
         }
     }
-    if (area.is_show && WORLD.DATA.query_temp("fb_index", 0) < fb.parent.fb_index) {
+    if (area.is_show && Number(WORLD.DATA.query_temp("fb_index", 0) ?? 0) < fb.parent.fb_index) {
         WORLD.DATA.set_temp("fb_index", fb.parent.fb_index);
     }
-    let ss_userids = WORLD.DATA.query_temp(fb_key2, "");
+    let ss_userids = String(WORLD.DATA.query_temp(fb_key2, "") ?? "");
     let msg = "<hio>恭喜你完成副本" + fb_name + "的首杀！</hio>";
     if (diff < 2) msg = "<hio>恭喜你做为" + me.family.name + "弟子首次通过了副本" + fb_name + "！</hio>";
     for (var i = 0; i < teams.length; i++) {
@@ -437,64 +449,54 @@ function fb_first_check(me, fb, area, diff) {
     WORLD.DATA.set_temp(fb_key2, ss_userids);
     fb.parent.notify_update();
 }
-
 function team_name(tms) {
-    var str = [];
+    const str: string[] = [];
     for (var i = 0; i < tms.length; i++) {
         str.push(tms[i].name);
     }
     return str.join("，");
 }
 function fb_confirm_over(me) {
-    if (!me.environment || !me.environment.is_fb()) return me.notify("你现在不在副本区域。");
+    if (!me.environment) return;
     var area = me.environment.parent;
-    var reward = query_fb_reward(me, area);
-    var p = reward.percent;
-    var exp = reward.exp;
-    var pot = reward.pot;
-    var str = ["当前副本："];
+    if (!area) return;
+    var score = me.query_fbscore();
+    var max_score = area.score || 100;
+    var p = parseInt(score * 100 / max_score);
+    if (p <= 0) p = 0;
+    if (p > 100) p = 100;
+
+    var exp = 1200;
+    var str: string[] = ["当前副本："];
     str.push(area.name);
-    str.push("\n将获得经验：");
-    str.push(exp);
-    str.push("，潜能：");
-    str.push(pot);
+    if (exp > 0) {
+        str.push("\n将获得经验：");
+        str.push(String(exp));
+        str.push("，潜能：");
+        str.push(String(exp));
+    }
     str.push("\n完成度：");
     if (p < 30) {
-        str.push(p);
+        str.push(String(p));
         str.push("%\n");
     } else if (p < 60) {
         str.push("<hig>");
-        str.push(p);
+        str.push(String(p));
         str.push("%</hig>\n");
     } else if (p < 80) {
         str.push("<hic>");
-        str.push(p);
+        str.push(String(p));
         str.push("%</hic>\n");
     } else if (p < 100) {
         str.push("<hiy>");
-        str.push(p);
+        str.push(String(p));
         str.push("%</hiy>\n");
     } else {
         p = 100;
         str.push("<hiz>");
-        str.push(p);
+        str.push(String(p));
         str.push("%</hiz>\n");
     }
     me.notify(str.join(""));
     me.send_commands("cr over", "领取奖励并离开副本");
-}
-
-function query_fb_reward(me, area) {
-    var score = me.query_fbscore();
-    var max_score = area.score || 100;
-    var max_exp = area.query_exp();
-    var max_pot = area.query_pot ? area.query_pot() : max_exp;
-    var p = parseInt(score * 100 / max_score);
-    if (p <= 0) p = 0;
-    if (p > 100) p = 100;
-    return {
-        percent: p,
-        exp: parseInt(max_exp * p / 100),
-        pot: parseInt(max_pot * p / 100)
-    };
 }

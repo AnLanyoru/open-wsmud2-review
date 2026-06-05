@@ -1,17 +1,33 @@
-﻿this.inherits(COMMAND);
-this.command = "dice";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_faint = true;
-this.regex = /^(\d)\s(\w+)$/;
-this.enter = function (me, type, objid) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+
+interface DiceItem {
+    id: string;
+    color_name: string;
+    unit: string;
+    dice: {
+        users: string[];
+        num: number;
+        user: string;
+    };
+}
+
+export default class extends COMMAND {
+    command = "dice";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_faint = true;
+    regex = /^(\d)\s(\w+)$/;
+
+    enter(me: CHARACTER, type: string, objid: string): void {
     if (!me.team) return me.send("你没有在队伍里。");
-    if (!me.team.objs || !me.team.objs.length) return me.send("目前没有等待分配的战利品。");
-    var item = null;
-    for (var i = 0; i < me.team.objs.length; i++) {
-        if (me.team.objs[i].id == objid) {
-            item = me.team.objs[i];
+    var objs = me.team.objs;
+    if (!objs || !objs.length) return me.send("目前没有等待分配的战利品。");
+    var item: DiceItem | null = null;
+    for (var i = 0; i < objs.length; i++) {
+        if (objs[i].id == objid) {
+            item = objs[i];
             break;
         }
     }
@@ -21,14 +37,12 @@ this.enter = function (me, type, objid) {
     if (!item.dice) return;
     if (!item.dice.users.remove(me.id)) return me.send("目前没有这个战利品等待分配。");
 
-    type = parseInt(type);
-    if (!(type >= 0)) return;
     var num = me.random(100) + 1;
-    var msg = null;
-    if (type === 2) {
+    var msg: string | null = null;
+    if (parseInt(type) === 2) {
         num = 0;
         msg = me.name + "放弃" + item.color_name + "。";
-    } else if (type === 0) {
+    } else if (parseInt(type) === 0) {
         switch (me.random(5)) {
             case 3:
                 msg = "<hig>" + me.name + "：天灵灵，地灵灵，看我骰子来显灵，这" + item.unit + item.color_name + "是我的了，" + num +"点。</hig>";
@@ -66,6 +80,7 @@ this.enter = function (me, type, objid) {
         item.dice.num = num;
     }
     if (item.dice.users.length===0) {
-        me.team.alloc(item);
+        me.team.alloc!(item);
     }
+}
 }

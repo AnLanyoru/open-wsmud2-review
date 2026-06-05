@@ -1,7 +1,15 @@
-﻿this.inherits(COMMAND);
-this.command = "diaoyu";
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
 
-this.enter = function (me) {
+export default class extends COMMAND {
+    command = "diaoyu";
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me) {
     if (!me.environment || !me.environment.can_diaoyu)
         return false;
     var wea = me.query_weapon();
@@ -24,6 +32,7 @@ this.enter = function (me) {
         desc: '["你眼睛一眨也不眨地盯着浮漂，专心致志。","浮漂一上一下的在动，看样子有东西要上钩了！"]',
     });
 }
+}
 
 function on_check(me) {
     var exp = WORLD.DATA.exps[me.level]
@@ -45,35 +54,62 @@ function on_check(me) {
     }
     me.send(`你正在钓鱼，当前效率${grade}，每10秒获得${exp}经验，${pot}潜能，${str}。`);
 }
+function calculate_lv(grade) {
+    // 权重基准(×10取整)
+
+    // 根据grade启用对应品质上限（无红色档）
+    let maxTier;
+    if (grade > 30) maxTier = 5;      // 橙色
+    else if (grade > 10) maxTier = 4; // 紫色
+    else if (grade > 1) maxTier = 3;  // 黄色
+    else maxTier = 2;                 // 蓝色
+
+    const tiers = ['white', 'green', 'blue', 'yellow', 'purple', 'orange'];
+    const weights = [7000, 2000, 500, 100, 20, 10]
+    const ranges = [[0, 2], [3, 5], [6, 8], [9, 11], [12, 14], [15, 17]];
+
+    // grade略微提升高品质概率：每一档高于白色的品质权重随grade和档位递增
+    const ranges_cumulative = [];
+    const rawWeights = [];
+    for (let i = 0; i <= maxTier; i++) {
+        let w = weights[i];
+        if (i >= 1) {
+            w = Math.floor(w * (1 + grade * i / 1200));
+        }
+        ranges_cumulative.push(ranges[i]);
+        rawWeights.push(w);
+    }
+
+    const [lo, hi] = UTIL.weightedChoice(ranges_cumulative, rawWeights);
+    return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
 function do_diaoyu(me) {
-
-
-    let er = this.yuer;
-    var obj = me.add_obj('res/yu#' + me.random(query_max_fish_level(me, er) + 1));
-    if (obj)
-        me.send_room("<hig>$N钓到一条" + obj.color_name + "。</hig>");
-    if (er.count > 1)
-        me.remove_obj(er, 1);
-    else {
-        me.remove_obj(er);
-        er = query_er(me);
-        this.yuer = er;
+    let r_i = me.random(100);
+    if (r_i > 89) {
+        let er = this.yuer;
+        let grade = me.query_prop('diaoyu1') + er.grade * 5;
+        let lv = calculate_lv(grade);
+        let obj = me.add_obj('res/yu#' + lv);
+        if (obj)
+            me.send_room("<hig>$N钓到一条" + obj.color_name + "。</hig>");
+        if (er.count > 1) {
+            me.remove_obj(er, 1);
+        } else {
+            me.remove_obj(er);
+            er = query_er(me);
+            if (!er) {
+                me.send_room("$N没有鱼饵了，无法继续钓鱼。");
+                me.set_state(null);
+            } else {
+                this.yuer = er;
+            }
+        }
     }
     var exp = WORLD.DATA.get_exp(me)
         + WORLD.DATA.query_temp("diaoyu_exp", 0);
     var pot = exp + me.query_prop('lsj_qn');
     me.add_exp(exp, pot, 0);
-
 }
-
-function query_max_fish_level(me, er) {
-    let grade = me.query_prop('diaoyu1') + (er.grade) * 5;
-    if (grade > 30) return 17; // 橙色及以下
-    if (grade > 10) return 14; // 紫色及以下
-    if (grade > 1) return 11; // 黄色及以下
-    return 8; // 蓝色及以下
-}
-
 function query_er(me) {
     for (var i = 0; i < me.items.length; i++) {
         if (me.items[i].path.startsWith("sp/tool/er#")) {
