@@ -1,9 +1,19 @@
-﻿this.inherits(COMMAND);
-this.command = "xue";
-this.allow_state = true;
-this.allow_fight = false;
-this.regex = /^(?:(\d+)\s)?(\w+)\s+from\s+(.+?)$/;
-this.enter = function (me, par, sk, target) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { SKILL } from "../../../core/skill/skill.js";
+import { SKILL_TYPES } from "../../../core/const.js";
+
+export default class extends COMMAND {
+    command = "xue";
+    allow_state = true;
+    allow_fight = false;
+    regex = /^(?:(\d+)\s)?(\w+)\s+from\s+(.+?)$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, par, sk, target) {
     if (!sk) return me.notify("你要学习什么技能？");
     target = me.find_obj(target, me.environment);
     if (!target) return me.notify("你要跟谁学习技能？");
@@ -100,12 +110,19 @@ this.enter = function (me, par, sk, target) {
     });
 
 }
+}
+
 const BAN_SKILLS = {
     linshuijing: true,
     guanshanjue: true
 };
-
-function on_check(me) {
+interface LearnState {
+    skill_base: SKILL;
+    target: CHARACTER;
+    max_level?: number;
+    queues: { skid: string; max_level?: number }[];
+}
+function on_check(this: LearnState, me: CHARACTER) {
 
 
     let speed = count_speed(me);
@@ -121,6 +138,7 @@ function on_check(me) {
 
     for (let item of this.queues) {
         skill = SKILL.get(item.skid);
+        if (!skill) continue;
         let maxlv = item.max_level || target_lv;
         str.push('\n准备学习', skill.query_color_name(me), '到', maxlv, '级');
         pot += (skill.query_needexp(maxlv, me) -
@@ -137,8 +155,6 @@ function on_check(me) {
     str.push('</hic>\n点击学习其他武功可添加到学习队列。');
     me.send(str.join(""));
 }
-
-
 function format_timespan(time, str) {
     if (time < 60) return str.push('少于1分钟');
     if (time > 86400) {
@@ -151,7 +167,6 @@ function format_timespan(time, str) {
     }
     str.push(Math.floor(time / 60), '分钟');
 }
-
 function to_next(me) {
     let state = me.state;
     if (state.queues.length > 0) {
@@ -169,9 +184,6 @@ function to_next(me) {
         return WORLD.check_user_next(me);
     }
 }
-
-
-
 function checkSkillCount(me, sk) {
     var count = 0;
     for (var skid in me.skills) {
@@ -216,7 +228,7 @@ function check_skill(me, skill, master, limit = true) {
     // }
     return true;
 }
-function do_learn(me) {
+function do_learn(this: LearnState, me: CHARACTER) {
     var master = this.target;
     if (!me.is_here(master) || !master.is_living()) {
         return false;
@@ -225,7 +237,7 @@ function do_learn(me) {
         me.notify("你的潜能不够，无法继续学习下去了。");
         return false;
     }
-    var skill = me.skills[this.skill_base.id];
+    var skill = me.skills?.[this.skill_base.id];
     var lv = 0;
     if (skill) {
         lv = skill.level;
@@ -254,7 +266,7 @@ function do_learn(me) {
     }
 
     if (exp > me.pot)
-        return me.notify_fail("你的潜能不够，无法继续学习下去了。");
+        exp = me.pot;
 
     if (this.skill_base.type === SKILL_TYPES.KNOWLEDGE) {
         let diff = me.query_prop('haoranqi');
@@ -269,7 +281,6 @@ function do_learn(me) {
     this.skill_base.add_exp(me, exp);
 
 }
-
 function count_speed(me) {
     let pot = parseInt((me.int + me.query_prop("int")) *
         (100 + me.query_prop("study_per") + me.family.query_temp('study_per', 0)

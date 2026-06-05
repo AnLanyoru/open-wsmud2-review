@@ -1,35 +1,21 @@
-﻿this.inherits(SKILL);
-this.name = "易筋经";
-this.id = "yijinjing";
-this.grade = 4;
-this.force_rad = 0.75;
-this.family = FAMILIES.SHAOLIN;
-this.desc = "少林寺的高级内功心法，为少林寺镇寺之宝";
-//"(\w+)"(.+?)"NOR"
-//<$1>$2</$1>
-this.can_enables = ["force"];
-this.learn_condition = {
+import { SKILL } from "../../../core/skill/skill.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+
+export default class extends SKILL {
+    name = "易筋经";
+    id = "yijinjing";
+    grade = 4;
+    force_rad = 0.75;
+    family = FAMILIES.SHAOLIN;
+    desc = "少林寺的高级内功心法，为少林寺镇寺之宝";
+    can_enables = ["force"];
+    learn_condition = {
     max_mp: 1000,
     skill: {
         force: 500
     }
 };
-this.query_prop = function (lv) {
-    return {
-        diff_sh_per: 5 + parseInt(lv / 300),
-    };
-}
-this.query_enable_prop = function (lv) {
-    return {
-        force: {
-            max_hp: lv * 20,
-            fy: parseInt(lv * 2 + 5),
-            limit_mp: lv * 150,
-            desc: "唯一：将你内力的75%转化为气血"
-        }
-    };
-}
-this.pfm = {
+    pfm_set = {
     foguang:
     {
         name: "佛光守护",
@@ -74,7 +60,7 @@ this.pfm = {
 
             me.send_room("<hiy>$N深深地吸一囗气，真力迸发，发出一声惊天动地的巨吼。</hiy>");
             if (!me.enemy) return false;
-            var list = [];
+            var list: any[] = [];
             var time = lv * 10 + 2000;
             if (time > 7000) time = 7000;
             for (let x of me.enemy) {
@@ -114,7 +100,7 @@ this.pfm = {
         use_type: 2,
         release_time: 0,
         use: function (me, target, lv) {
-            var lv = 30 + parseInt(lv / 100);
+            var zhaoLv = 30 + parseInt(lv / 100);
             me.send_room("<hiy>$N高呼佛号，全身真气鼓动，犹如金铸之钟，坚不可摧。</hiy>");
             me.add_status({
                 id: "force",
@@ -122,14 +108,32 @@ this.pfm = {
                 desc: "大幅减少你受到的伤害",
                 duration: 10000,
                 prop: {
-                    diff_sh_per2: lv
+                    diff_sh_per2: zhaoLv
                 }
             });
 
         },
         query_desc: function (me, lv) {
-            var lv = 30 + parseInt(lv / 100);
-            return "减少你受到的伤害，10秒内增加" + lv + "%伤害减免。";
+            var calcLv2 = 30 + parseInt(lv / 100);
+            return "减少你受到的伤害，10秒内增加" + calcLv2 + "%伤害减免。";
         }
     }
 };
+
+    query_prop(lv, me) {
+    return {
+        diff_sh_per: 5 + parseInt(lv / 300),
+    };
+}
+    query_enable_prop(lv) {
+    return {
+        force: {
+            max_hp: lv * 20,
+            fy: parseInt(lv * 2 + 5),
+            limit_mp: lv * 150,
+            desc: "唯一：将你内力的75%转化为气血"
+        }
+    };
+}
+}
+
