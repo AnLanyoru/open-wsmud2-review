@@ -1,12 +1,16 @@
-﻿this.inherits(OBJ);
-this.set({
-    unit: "张",
-    name: "改名符",
-    desc: "更改你的名字",
-    grade: 2,
-    value: 0
-});
-this.on_use = function (me) {
+import { OBJ } from "../../../core/item/obj.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+import { SKILL } from "../../../core/skill/skill.js";
+
+export default class extends OBJ {
+    unit = "张";
+    name = "改名符";
+    desc = "更改你的名字";
+    grade = 2;
+    value = 0;
+
+    on_use(me) {
     if (!me.is_player) return me.notify_fail("你不能使用" + this.name + "。");
 
     me.notify("请说出你的名字(打开聊天框任意频道输入)：");
@@ -14,6 +18,8 @@ this.on_use = function (me) {
     me.wait_input = readname;
     return false;
 }
+}
+
 function readname(me, cmd) {
     if (cmd == "clearwait") {
         me.wait_input = null;
@@ -39,10 +45,9 @@ function readname(me, cmd) {
     update_name(me, name, obj);
     return false;
 }
-
 async function update_name(me, name, obj) {
     try {
-        let result = await WORLD.DB.change_name(me.id, name);
+        let result = await WORLD.DB.change_name(me.id, me.userid, name);
         if (!result) return me.send('名称更改失败，请联系管理员');
         me.wait_input = null;
         me.name = name;
@@ -85,7 +90,7 @@ async function update_name(me, name, obj) {
         return me.send('你的名字已经改为：' + name + "。");
 
 
-    } catch (err) {
+    } catch (err: any) {
         if (err.errno == 1062) {
             return me.send('这个名字已经有人使用了。');
         } else {

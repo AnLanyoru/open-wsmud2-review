@@ -1,17 +1,16 @@
-﻿this.inherits(COMMAND);
-this.command = "goto";
-this.allow_fight = false;
-this.regex = /^(\w+)(?:\s+(\w+))$/;
-this.enter = function (me, arg, par) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { ROOM } from "../../../core/room/room.js";
+import { USERTASK } from "../../../core/task/playertask.js";
 
-    if (!me.can_trans()) return;
-    let action = this.actions[arg];
-    if (!action) return me.send('没有这个动作设定。');
-    if (action(me, par)) {
-        me.send('{type:"dialog",dialog:"jh",close:true}');
-    }
-}
-this.actions = {
+export default class extends COMMAND {
+    command = "goto";
+    allow_fight = false;
+    regex = /^(\w+)(?:\s+(\w+))$/;
+    actions = {
     home: function (me) {
 
         let home = me.query_temp("home");
@@ -131,6 +130,21 @@ this.actions = {
         task.to_taofan(me);
     }
 };
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg, par) {
+
+    if (!me.can_trans()) return;
+    let action = this.actions[arg];
+    if (!action) return me.send('没有这个动作设定。');
+    if (action(me, par)) {
+        me.send('{type:"dialog",dialog:"jh",close:true}');
+    }
+}
+}
+
 function find_npc(family, path) {
     for (let item of family.def_npcs) {
         if (path !== item[0]) continue;
