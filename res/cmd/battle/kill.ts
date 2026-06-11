@@ -1,6 +1,16 @@
-﻿this.inherits(COMMAND);
-this.command = "kill";
-this.enter = function (me, argid) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+import { NPC } from "../../../core/char/npc.js";
+
+export default class extends COMMAND {
+    command = "kill";
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, argid) {
     if (me.state) {
         return me.notify("你现在正在" + me.state.title + ",没时间杀人。");
     }
@@ -84,5 +94,6 @@ this.enter = function (me, argid) {
 
     WORLD.auto_pfm(me, target);
 
+}
 }
 

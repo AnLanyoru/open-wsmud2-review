@@ -1,70 +1,54 @@
-﻿this.inherits(ROOM);
-this.name = "擂台"
-this.desc = "你正站在一个白玉汉石砌成方圆数十丈的大擂台上面，擂台下面的观众声嘶力竭的呐喊助威，加油！加油！加油！加油！加油！加油！";
-this.exits = {};
-this.max_item_count = 1;
-this.no_save = true;
+import { ROOM } from "../../../../core/room/room.js";
+import { WORLD } from "../../../../core/world.js";
+import type { CHARACTER } from "../../../../core/char/character.js";
 
+export default class MapRoom extends ROOM {
+    name = "擂台";
+    desc = "你正站在一个白玉汉石砌成方圆数十丈的大擂台上面，擂台下面的观众声嘶力竭的呐喊助威，加油！加油！加油！加油！加油！加油！";
+    exits = {};
+    max_item_count = 1;
+    no_save = true;
 
-this.add_action("fight", null, function (me) {
-    me.notify("你正在擂台比试。");
-    return true;
-}).allow_fight = true;;
-this.add_action("kill", null, function (me) {
-    me.notify("你正在擂台比试。");
-    return true;
-}).allow_fight = true;;
-this.add_action("dazuo", null, function (me) {
-    me.notify("你正在擂台比试。");
-    return true;
-}).allow_fight = true;;
-this.add_action("liaoshang", null, function (me) {
-    me.notify("你正在擂台比试。");
-    return true;
-}).allow_fight = true;;
-this.add_action("perform", null, function (me) {
-    me.notify("擂台上自动出招。");
-    return true;
-}).allow_fight = true;;
-this.add_action("unequip", null, function (me) {
-    me.notify("擂台上自动出招，不允许卸下装备。");
-    return true;
-}).allow_fight = true;;
-// this.add_action("equip", null, function (me) {
-//     me.notify("擂台上自动出招。");
-//     return true;
-// });
-this.add_action("enable", null, function (me) {
-    me.notify("擂台上自动出招，不能更改武功。");
-    return true;
-}).allow_fight = true;
-// this.add_action("use", null, function (me) {
+    constructor() {
+        super();
+        var act: ReturnType<ROOM['add_action']>;
+        act = this.add_action("fight", "", this.action_fight);
+        if (act) act.allow_fight = true;
+        act = this.add_action("kill", "", this.action_kill);
+        if (act) act.allow_fight = true;
+        act = this.add_action("dazuo", "", this.action_dazuo);
+        if (act) act.allow_fight = true;
+        act = this.add_action("liaoshang", "", this.action_liaoshang);
+        if (act) act.allow_fight = true;
+        act = this.add_action("perform", "", this.action_perform);
+        if (act) act.allow_fight = true;
+        act = this.add_action("unequip", "", this.action_unequip);
+        if (act) act.allow_fight = true;
+        act = this.add_action("enable", "", this.action_enable);
+        if (act) act.allow_fight = true;
+        act = this.add_action("surrender", '投降', this.surrender);
+        if (act) act.allow_fight = true;
+    }
 
-//     me.notify("擂台上自动出招，不允许使用道具。");
-//     return true;
-// }).allow_fight = true;;
-this.add_action("surrender", '投降', function (me) {
-    WORLD.COMMANDS.biwu.surrender(me);
-    return true;
-}).allow_fight = true;
-// this.start_time = 0;
-// this.on_enter = function (me) {
-//     if (!me.is_player) return;
-
-
-// }
-// this.start_challenge = function (me, index) {
-//     if (me.environment !== this) return;
-
-// }
-
-this.on_leave = function (me, dir) {
-
-    if (dir == "fightend") {
+    action_fight(this: MapRoom, me: CHARACTER) { me.notify("你正在擂台比试。"); return true; }
+    action_kill(this: MapRoom, me: CHARACTER) { me.notify("你正在擂台比试。"); return true; }
+    action_dazuo(this: MapRoom, me: CHARACTER) { me.notify("你正在擂台比试。"); return true; }
+    action_liaoshang(this: MapRoom, me: CHARACTER) { me.notify("你正在擂台比试。"); return true; }
+    action_perform(this: MapRoom, me: CHARACTER) { me.notify("擂台上自动出招。"); return true; }
+    action_unequip(this: MapRoom, me: CHARACTER) { me.notify("擂台上自动出招，不允许卸下装备。"); return true; }
+    action_enable(this: MapRoom, me: CHARACTER) { me.notify("擂台上自动出招，不能更改武功。"); return true; }
+    surrender(this: MapRoom, me: CHARACTER) {
+        if (WORLD.COMMANDS.biwu && typeof WORLD.COMMANDS.biwu === 'object' && 'surrender' in WORLD.COMMANDS.biwu) {
+            // @ts-ignore 动态借用比武命令的投降处理函数
+            WORLD.COMMANDS.biwu.surrender(me);
+        }
         return true;
     }
-    // if (dir == "down") {
-    //     return me.notify_fail("你比试完才可以下擂台。");
-    // }
-    return me.notify_fail("你比试完才可以下擂台。");
+
+    on_leave(me: CHARACTER, dir: string) {
+        if (dir == "fightend") {
+            return true;
+        }
+        return me.notify_fail("你比试完才可以下擂台。");
+    }
 }

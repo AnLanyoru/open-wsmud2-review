@@ -1,10 +1,13 @@
-﻿this.inherits(SKILL);
-this.name = "九阴白骨爪";
-this.id = "jiuyinbaiguzhao";
-this.grade = 3;
+import { SKILL } from "../../../core/skill/skill.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { WEAPON_TYPE } from "../../../core/const.js";
 
-this.family = FAMILIES.EMEI;
-this.attack_actions = [
+export default class extends SKILL {
+    name = "九阴白骨爪";
+    id = "jiuyinbaiguzhao";
+    grade = 3;
+    family = FAMILIES.EMEI;
+    attack_actions = [
     "$N左爪虚晃，右爪蓄力，一招「勾魂夺魄」直插向$n的$l",
     "$N双手连环成爪，爪爪钩向$n，「九子连环」已向$n的$l抓出",
     "$N双手使出「十指穿心」，招招不离$n的$l",
@@ -12,29 +15,15 @@ this.attack_actions = [
     "$N使一招「风卷残云」，双爪幻出满天爪影抓向$n全身",
     "$N吐气扬声，一招「唯我独尊」双爪奋力向$n天灵戳下"
 ];
-this.desc = "九阴真经里记载的外门功夫，阴狠毒辣";
-//"(\w+)"(.+?)"NOR"
-//<$1>$2</$1>
-this.can_enables = ["unarmed", "parry"];
-this.learn_condition = {
+    desc = "九阴真经里记载的外门功夫，阴狠毒辣";
+    can_enables = ["unarmed", "parry"];
+    learn_condition = {
     max_mp:5000,
     skill: {
         unarmed: 300
     }
 };
-this.query_enable_prop = function (lv) {
-    return {
-        unarmed: {
-            gj: parseInt(lv * 1.6) + 20,
-            mz: parseInt(lv*1.5 + 20)
-        },
-        parry: {
-            zj: parseInt(lv * 1.5) + 20,
-            fy: lv + 20
-        }
-    };
-}
-this.pfm = {
+    pfm_set = {
     duo:
     {
         name: "夺命",
@@ -90,9 +79,24 @@ this.pfm = {
             me.end_attack(target);
         },
         query_desc: function (me, lv) {
-            var lv = 30 - lv / 100;
-            if (lv < 10) lv = 10;
-            return "对敌人进行快速攻击3次，对方的气血每降低" + lv + "%，你的攻击次数增加1次";
+            var calcLv = 30 - lv / 100;
+            if (calcLv < 10) calcLv = 10;
+            return "对敌人进行快速攻击3次，对方的气血每降低" + calcLv + "%，你的攻击次数增加1次";
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        unarmed: {
+            gj: parseInt(lv * 1.6) + 20,
+            mz: parseInt(lv*1.5 + 20)
+        },
+        parry: {
+            zj: parseInt(lv * 1.5) + 20,
+            fy: lv + 20
+        }
+    };
+}
+}
+
