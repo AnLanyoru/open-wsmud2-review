@@ -1,11 +1,18 @@
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
 
-this.inherits(COMMAND);
-this.command = "info";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.enter = function (me, tid) {
-    let str = [];
+export default class extends COMMAND {
+    command = "info";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, tid) {
+    let str: string[] = [];
     let notifier = me;
     if (tid) {
         if (me.user_level > 0) {
@@ -17,13 +24,13 @@ this.enter = function (me, tid) {
 
     str.push(me.color_name, '\n');
 
-    str.push('武道塔进度', me.query_temp('wd_level', 0), '层，已累积', this.query_wdcount(me), '份奖励\n');
+    str.push('武道塔进度', String(me.query_temp('wd_level', 0)), '层，已累积', String(this.query_wdcount(me)), '份奖励\n');
 
-    str.push('武道残页总量', me.query_temp('wds', 0), '\n');
+    str.push('武道残页总量', String(me.query_temp('wds', 0)), '\n');
     str.push('门派职位等级', me.family.query_task_title(me),
-        '，已累积', this.query_smcount(me), '份师门物资\n');
+        '，已累积', String(this.query_smcount(me)), '份师门物资\n');
     str.push('衙门职位等级', YMTITLES[me.query_temp('ym_level', 0)],
-        '，已累积', this.query_ymcount(me), '份奖励\n');
+        '，已累积', String(this.query_ymcount(me)), '份奖励\n');
 
     str.push('今日副本次数', me.query_temp('fb_count_day', 0), '/20', '\n');
     str.push('BOSS挑战', me.query_temp('bcc', 0), '/5', '\n');
@@ -40,30 +47,31 @@ this.enter = function (me, tid) {
         str.push('获取帝魄碎片', me.query_temp('mpcd', 0), '/1\n');
 
     str.push('获取额外', me.query_temp('sssc', 0), '/', 500 + me.query_prop('shashou'), '师门功绩\n');
-    str.push('本周已经获取襄阳军功', me.query_temp('jg_week', 0), '/', JUNGONG_LIMITS[me.level], '\n');
+    str.push('本周已经获取襄阳军功', String(me.query_temp('jg_week', 0)), '/', String(JUNGONG_LIMITS[me.level]), '\n');
 
-    str.push('已领取', me.query_temp('xy_hd', 0) * REWARDS_LIMIT[me.level], '/', REWARDS_LIMIT[me.level] * 5, '奖励军功\n');
+    str.push('已领取', String(me.query_temp('xy_hd', 0) * REWARDS_LIMIT[me.level]), '/', String(REWARDS_LIMIT[me.level] * 5), '奖励军功\n');
     notifier.send(str.join(""));
 }
-
-const REWARDS_LIMIT = [0, 10, 20, 30, 40, 50, 60];//奖励等级对应的每份上限
-const JUNGONG_LIMITS = [10, 50, 100, 200, 300, 400, 500];//每周功绩上限
-const YMTITLES = ['', '衙役', '捕快', '捕头', '总捕头', '巡检 ', '神捕'];
-this.query_wdcount = function (me) {
+    query_wdcount(me) {
     let tm = me.query_temp("wd_tm", 0);
     if (!tm) return 0;
     tm = Math.floor((Date.now() - tm * 100000) / 3600000 / 24);
     return Math.min(tm, 7);
 }
-this.query_smcount = function (me) {
+    query_smcount(me) {
     let sm = me.query_temp("sm_tm", 0);
     if (!sm) return -1;
     sm = Math.floor((Date.now() - sm * 100000) / 3600000);
     return Math.min(sm, 60);
 }
-this.query_ymcount = function (me) {
+    query_ymcount(me) {
     let sm = me.query_temp("ym_tm", 0);
     if (!sm) return 0;
     sm = Math.floor((Date.now() - sm * 100000) / 3600000);
     return Math.min(sm, 60);
 }
+}
+
+const REWARDS_LIMIT = [0, 10, 20, 30, 40, 50, 60];
+const JUNGONG_LIMITS = [10, 50, 100, 200, 300, 400, 500];
+const YMTITLES = ['', '衙役', '捕快', '捕头', '总捕头', '巡检 ', '神捕'];

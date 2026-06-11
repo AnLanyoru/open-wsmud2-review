@@ -1,10 +1,18 @@
-﻿this.inherits(COMMAND);
-this.command = "pack";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_faint = true;
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+
+export default class extends COMMAND {
+    command = "pack";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_faint = true;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg) {
     var target = me;
     if (arg) {
         if (arg == "none") return me.notify('{"type":"dialog","dialog":"pack","money":' + me.money + "}");
@@ -21,7 +29,7 @@ this.enter = function (me, arg) {
     }
     var str = ['{"type":"dialog","dialog":"'];
 
-    if (target != me) {
+    if (target != me || !me.is_player) {
         str.push('pack2",id:"');
         str.push(target.id);
         str.push('",name:"');
@@ -75,7 +83,7 @@ this.enter = function (me, arg) {
             var item = items[i];
             if (i > 0) str.push(",");
             if (item) {
-                str.push(`["${item.color_name}","${item.id}",${item.grade},${item.on_use ? 1 : 0},${item.is_locked ? 1 : 0}]`);
+                str.push(`[${JSON.stringify(item.color_name ?? "")},${JSON.stringify(item.id ?? "")},${item.grade},${item.on_use ? 1 : 0},${item.is_locked ? 1 : 0}]`);
                 // str.push('{name:"');
                 // str.push(item.color_name);
                 // str.push('",id:"');
@@ -94,10 +102,12 @@ this.enter = function (me, arg) {
     }
     str.push(",max_item_count:");
     str.push(target.max_item_count);
-    if (target === me) {
+    if (target === me && target.eq_group !== undefined) {
         str.push(",eq_group:");
         str.push(target.eq_group);
     }
     str.push('}');
     me.send(str.join(""));
 }
+}
+
