@@ -1,13 +1,23 @@
-﻿
-this.inherits(COMMAND);
-this.command = "stats";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_faint = true;
-this.regex = /^(\w+)(?:\s+([a-z]+))?(?:\s+(\d+))?$/;
-const STATS = WORLD.STATS;
-this.enter = function (me, par, fam, index) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { EQUIP_TYPE } from "../../../core/const.js";
+import type { StatsTopEntry, ScoreRankEntry, WeaponRankEntry } from "../../../core/world.js";
+import type { USER } from "../../../core/char/user.js";
+
+// todo 需要检查一下和第一次提交的js文件的不同
+export default class extends COMMAND {
+    command = "stats";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_faint = true;
+    regex = /^(\w+)(?:\s+([a-z]+))?(?:\s+(\d+))?$/;
+
+    /**
+     * @param me - 执行命令的角色
+     */
+    enter(me: CHARACTER, par?: string, fam?: string, index?: string): void {
   
     if (!par) {
         return;
@@ -52,163 +62,31 @@ this.enter = function (me, par, fam, index) {
     }
   
 }
-
-this.render_item = function (me, cache, fam, index) { 
+    render_item(me: CHARACTER, cache: Record<string, UserStatsInst | undefined>, fam?: string, index?: string): void {
     if (!fam) fam = "all";
-    let stats = cache[fam];
-    
-    if (!stats|| !stats.result) return me.send('你要看什么？');
-    index = parseInt(index) - 1;
-    if (!(index >= 0 && index < stats.result.length))
+    const stats = cache[fam];
+
+    if (!stats || !stats.result) return me.send('你要看什么？');
+    const idx = Number(index) - 1;
+    if (!(idx >= 0 && idx < stats.result.length))
         return  me.send('你要看什么？');
-    let item = stats.result[index];
+    const item = stats.result[idx];
     if (!item) return me.send('没有这个人。');
-    let user = WORLD.getUser(item.id);
+    const user = WORLD.getUser(item.id);
     if (!user) return me.send(item.name + "现在不在线。");
     if (user.query_desc) {
         me.notify(user.query_desc(me, "look1"));
     }
 }
-function render_top_item(me, fam, index) { 
-    let tops = STATS.TOPS;
-    if (fam) tops = STATS['tops_' + fam.toUpperCase()] ?? [];
-    let item = tops[index - 1];
-    if (!item) return me.send('你要看什么？');
-    return me.notify(item.query_desc(item, 'look1'));
-}
-
-function render_score_item(me, fam, index) { 
-    let tops = STATS.SCORE;
-    if (fam) tops = STATS.SC_STATS[fam.toUpperCase()] ?? [];
-    let item = tops[index-1];
-    if (!item) return me.send('你要看什么？');
-    let user = WORLD.getUser(item.id);
-    if (!user) return me.send('对方不在线。');
-    return me.notify(user.query_desc(me));
-}
-function renderScore(me, fam) {
-    let tops = STATS.SCORE;
-    if (fam) tops = STATS.SC_STATS[fam.toUpperCase()] ?? [];
-
-    var str = ['{"type":"dialog","dialog":"stats","scores":['];
-    for (var i = 0; i < tops.length; i++) {
-        if (i > 19) break;
-        var item = tops[i];
-        if (i > 0) str.push(",");
-        str.push('["');
-        str.push(item.name);
-        str.push('",');
-        str.push(item.score);
-        str.push(']');
-    }
-    str.push('],score:');
-    str.push(me.score);
-    str.push("}");
-    me.send(str.join(""));
-}
-// this.query_scores = function () { 
-//     return SCORE_STATS;
-// }
-// const SCORE_STATS = {};
-// function renderScore(me, fam) { 
-//     let stype = fam;
-//     if (!stype) stype = "all";
-//     let stats = SCORE_STATS[stype];
-//     if (!stats) { 
-//         stats = new UserStats(
-//             (me, item) => {
-//                 return me.score < item.value
-//             },
-//             me => {
-//                 return {
-//                     id: me.id,
-//                     value: me.score,
-//                     name: me.color_name
-//                 };
-//             });
-//         stats.type = "score";
-//         stats.fam = fam;
-//         SCORE_STATS[stype] = stats;
-//     }
-//     if (stats.isExpire()) {
-//         stats.order(',score:'+me.score);
-//     }
-//     me.send(stats.cache);
-// }
-function renderTops(me, stype) {
-    let tops = STATS.TOPS;
-    let famid = null;
-    if (stype) { 
-        famid = stype.toUpperCase();
-        tops = STATS["tops_" + famid];
-        if (!tops) return me.send('没有这个榜单。');
-    }
-    var str = ['{"type":"dialog","dialog":"stats","tops":['];
-    
-    for (var i = 0; i < tops.length; i++) {
-        var item = tops[i];
-        if (i > 0) str.push(",");
-        str.push('["', item.long_name(),'",',item.score,']');
-    }
-    if (!stype || famid === me.family.id) {
-        str.push('],top:', (me.query_temp(stype ? "top_fam" : "top", 0)));
-        str.push(',sc:', me.query_temp(stype ? "top_fam_sc" : "top_sc", 0));
-    } else { 
-        str.push('],top:0');
-        str.push(',sc:0');
-    }
- 
-    str.push(',fam:"', stype,'"');
-    str.push("}");
-    me.send(str.join(""));
-}
-function render_eq(me, type,index) { 
-
-    if (!type) type = 'weapon';
-    let eqs = STATS.EQ_STATS[EQUIP_TYPE[type.toUpperCase()]] ?? [];
-    let wea = eqs[index - 1];
-    me.send(wea.desc);
-}
-function renderWeapons(me,type) {
-    var str = ['{"type":"dialog","dialog":"stats","weapons":['];
-    if (!type) type = 'weapon';
-    
-    let eqs = STATS.EQ_STATS[EQUIP_TYPE[type.toUpperCase()]]??[];
-    for (var i = 0; i < eqs.length; i++) {
-        if (i > 9) break;
-        var item = eqs[i];
-        if (i > 0) str.push(",");
-        str.push('["');
-        if (item.name) {
-            str.push('<wht>');
-            str.push(item.name);
-            str.push('的</wht>');
-            str.push(item.wname);
-        } else { 
-            str.push('无');
-        }
-        str.push('",',item.score,']');
-    }
-    str.push(']');
-    str.push("}");
-    me.send(str.join(""));
-}
-
-
-
-
-
-const EXP_STATS = {};
-
-this.renderExp = function (me, fam) {
+    renderExp(me: CHARACTER, fam?: string): void {
     let stype = fam;
     if (!stype) stype = "all";
-    let stats = EXP_STATS[stype];
+    let stats: UserStatsInst | undefined = EXP_STATS[stype];
 
     if (!stats) {
-        stats = new UserStats(
-            (me, item) => { return me.exp < item.value },
-            me => {
+        stats = new (UserStats as unknown as new (...args: any[]) => UserStatsInst)(
+            (me: CHARACTER, item: { value: number }) => { return me.exp < item.value },
+            (me: CHARACTER) => {
                 return {
                     id: me.id,
                     value: me.exp,
@@ -219,21 +97,20 @@ this.renderExp = function (me, fam) {
         stats.fam = fam;
         EXP_STATS[stype] = stats;
     }
-    if (stats.isExpire()) {
-        stats.order();
+    if (stats!.isExpire()) {
+        stats!.order();
     }
-    me.send(stats.cache);
+    me.send(stats!.cache!);
 }
-const MONEY_STATS = {};
-this.renderMoney = function (me, fam) {
+    renderMoney(me: CHARACTER, fam?: string): void {
     let stype = fam;
     if (!stype) stype = "all";
-    let stats = MONEY_STATS[stype];
+    let stats: UserStatsInst | undefined = MONEY_STATS[stype];
 
     if (!stats) {
-        stats = new UserStats(
-            (me, item) => { return me.money < item.value },
-            me => {
+        stats = new (UserStats as unknown as new (...args: any[]) => UserStatsInst)(
+            (me: CHARACTER, item: { value: number }) => { return me.money < item.value },
+            (me: CHARACTER) => {
                 return {
                     id: me.id,
                     value: me.money,
@@ -241,7 +118,7 @@ this.renderMoney = function (me, fam) {
                 };
             });
         stats.type = "money";
-        stats.formatter = value => {
+        stats.formatter = function (this: void, value: number): string {
             if (value >= 10000) {
                 return '"' + Math.floor(value / 10000) + "两黄金" + '"';
             }
@@ -256,22 +133,20 @@ this.renderMoney = function (me, fam) {
         stats.fam = fam;
         MONEY_STATS[stype] = stats;
     }
-    if (stats.isExpire()) {
-        stats.order();
+    if (stats!.isExpire()) {
+        stats!.order();
     }
-    me.send(stats.cache);
+    me.send(stats!.cache!);
 }
-
-const MP_STATS = {};
-this.renderMP = function (me, fam) {
+    renderMP(me: CHARACTER, fam?: string): void {
     let stype = fam;
     if (!stype) stype = "all";
-    let stats = MP_STATS[stype];
+    let stats: UserStatsInst | undefined = MP_STATS[stype];
 
     if (!stats) {
-        stats = new UserStats(
-            (me, item) => { return me.max_mp < item.value },
-            me => {
+        stats = new (UserStats as unknown as new (...args: any[]) => UserStatsInst)(
+            (me: CHARACTER, item: { value: number }) => { return me.max_mp < item.value },
+            (me: CHARACTER) => {
                 return {
                     id: me.id,
                     value: me.max_mp,
@@ -282,17 +157,142 @@ this.renderMP = function (me, fam) {
         stats.fam = fam;
         MP_STATS[stype] = stats;
     }
-    if (stats.isExpire()) {
-        stats.order();
+    if (stats!.isExpire()) {
+        stats!.order();
     }
-    me.send(stats.cache);
+    me.send(stats!.cache!);
+}
 }
 
+const STATS = WORLD.STATS;
+function render_top_item(me: CHARACTER, fam: string | undefined, index: string | undefined): void {
+    const tops: StatsTopEntry[] = STATS.TOPS;
+    let items: StatsTopEntry[];
+    if (fam) items = (STATS['tops_' + fam.toUpperCase()] ?? []) as unknown as StatsTopEntry[];
+    else items = tops;
+    const item = items[Number(index) - 1];
+    if (!item) return me.send('你要看什么？');
+    return me.notify(item.query_desc!(item as unknown as CHARACTER, 'look1'));
+}
+function render_score_item(me: CHARACTER, fam: string | undefined, index: string | undefined): void {
+    const tops: ScoreRankEntry[] = STATS.SCORE;
+    let items: ScoreRankEntry[];
+    if (fam) items = (STATS.SC_STATS[fam.toUpperCase()] ?? []) as unknown as ScoreRankEntry[];
+    else items = tops;
+    const item = items[Number(index) - 1];
+    if (!item) return me.send('你要看什么？');
+    const user = WORLD.getUser(item.id);
+    if (!user) return me.send('对方不在线。');
+    return me.notify(user.query_desc(me));
+}
+function renderScore(me: CHARACTER, fam?: string): void {
+    const tops: ScoreRankEntry[] = STATS.SCORE;
+    const items: ScoreRankEntry[] = fam ? (STATS.SC_STATS[fam.toUpperCase()] ?? []) as unknown as ScoreRankEntry[] : tops;
 
+    const str: string[] = ['{"type":"dialog","dialog":"stats","scores":['];
+    for (let i = 0; i < items.length; i++) {
+        if (i > 19) break;
+        const item = items[i];
+        if (i > 0) str.push(",");
+        str.push('["');
+        str.push(item.name ?? "");
+        str.push('",');
+        str.push(String(item.score));
+        str.push(']');
+    }
+    str.push('],score:');
+    str.push(String(me.score));
+    str.push("}");
+    me.send(str.join(""));
+}
+function renderTops(me: CHARACTER, stype?: string): void {
+    const tops: StatsTopEntry[] = STATS.TOPS;
+    let famid: string | null = null;
+    let items: StatsTopEntry[];
+    if (stype) {
+        famid = stype.toUpperCase();
+        const found = STATS["tops_" + famid];
+        if (!found) return me.send('没有这个榜单。');
+        items = found as unknown as StatsTopEntry[];
+    } else {
+        items = tops;
+    }
+    const str: string[] = ['{"type":"dialog","dialog":"stats","tops":['];
 
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (i > 0) str.push(",");
+        str.push('["', item.long_name!(),'",',String(item.score),']');
+    }
+    if (!stype || famid === me.family!.id) {
+        str.push('],top:', String(me.query_temp(stype ? "top_fam" : "top", 0) ?? 0));
+        str.push(',sc:', String(me.query_temp(stype ? "top_fam_sc" : "top_sc", 0) ?? 0));
+    } else {
+        str.push('],top:0');
+        str.push(',sc:0');
+    }
 
+    str.push(',fam:"', stype ?? '','"');
+    str.push("}");
+    me.send(str.join(""));
+}
+function render_eq(me: CHARACTER, type: string | undefined, index: string | undefined): void {
 
-function UserStats(order,added) {
+    if (!type) type = 'weapon';
+    const eqs: WeaponRankEntry[] = STATS.EQ_STATS[EQUIP_TYPE[type.toUpperCase()]] ?? [];
+    const wea = eqs[Number(index) - 1];
+    if (wea) me.send(wea.desc);
+}
+function renderWeapons(me: CHARACTER, type?: string): void {
+    const str: string[] = ['{"type":"dialog","dialog":"stats","weapons":['];
+    if (!type) type = 'weapon';
+
+    const eqs: WeaponRankEntry[] = STATS.EQ_STATS[EQUIP_TYPE[type.toUpperCase()]] ?? [];
+    for (let i = 0; i < eqs.length; i++) {
+        if (i > 9) break;
+        const item = eqs[i];
+        if (i > 0) str.push(",");
+        str.push('["');
+        if (item.name) {
+            str.push('<wht>');
+            str.push(item.name);
+            str.push('的</wht>');
+            str.push(item.wname);
+        } else {
+            str.push('无');
+        }
+        str.push('",',String(item.score),']');
+    }
+    str.push(']');
+    str.push("}");
+    me.send(str.join(""));
+}
+
+interface UserStatsResult {
+    id: string;
+    value: number;
+    name: string;
+}
+
+interface UserStatsInst {
+    result: UserStatsResult[] | null;
+    cache: string | null;
+    time: number;
+    lessThan: (me: CHARACTER | USER, item: UserStatsResult) => boolean;
+    addItem: (me: CHARACTER | USER) => UserStatsResult;
+    maxCount: number;
+    type: string | null;
+    fam: string | undefined;
+    formatter: (this: void, value: number) => string;
+    isExpire: () => boolean;
+    order: (append?: string) => void;
+    queue: (me: CHARACTER | USER) => void;
+}
+
+const EXP_STATS: Record<string, UserStatsInst | undefined> = {};
+const MONEY_STATS: Record<string, UserStatsInst | undefined> = {};
+const MP_STATS: Record<string, UserStatsInst | undefined> = {};
+function UserStats(this: UserStatsInst, order: (me: CHARACTER, item: UserStatsResult) => boolean, added: (me: CHARACTER) => UserStatsResult): void {
     this.result = null;
     this.cache = null;
     this.time = 0;
@@ -301,118 +301,60 @@ function UserStats(order,added) {
     this.maxCount = 20;
     this.type = null;
 }
-UserStats.prototype.formatter = function (val) {
-    return val;
-}
-UserStats.prototype.isExpire = function () {
+UserStats.prototype.formatter = function (this: UserStatsInst, val: number): string {
+    return String(val);
+};
+UserStats.prototype.isExpire = function (this: UserStatsInst): boolean {
     return Date.now() - this.time > 0;
-}
-UserStats.prototype.order = function (append) {
+};
+UserStats.prototype.order = function (this: UserStatsInst, append?: string): void {
     this.result = [];
     this.time = Date.now() + 60000;
     let fam = this.fam;
     if (fam) fam = fam.toUpperCase();
     for (let i = 0; i < WORLD.USERS.length; i++) {
-        let user = WORLD.USERS[i];
+        const user = WORLD.USERS[i];
         if (user.user_level > 4) continue;
-        if (fam && user.family.id !== fam)
+        if (fam && user.family!.id !== fam)
             continue;
         this.queue(user);
     }
-    let str = ['{"type":"dialog","dialog":"stats","items":['];
-    for (let i = 0; i < this.result.length; i++) {
-        let user = this.result[i];
+    const str: string[] = ['{"type":"dialog","dialog":"stats","items":['];
+    for (let i = 0; i < this.result!.length; i++) {
+        const u = this.result![i];
         if (i > 0) str.push(",");
-        str.push('["', user.name, '",', this.formatter(user.value),']');
+        str.push('["', u.name, '",', this.formatter(u.value),']');
     }
     str.push(']');
-    str.push(',"time":', Date.now(), '');
-    str.push(',"st":"', this.type, '"', append ?? "");
-    str.push(',"fam":"', this.fam,'"');
-    
+    str.push(',"time":', String(Date.now()), '');
+    str.push(',"st":"', this.type ?? '', '"', append ?? "");
+    str.push(',"fam":"', this.fam ?? '','"');
+
     str.push("}");
-    this.cache= str.join("");
-}
-UserStats.prototype.queue = function (me) {
-    let index = this.result.length - 1;
+    this.cache = str.join("");
+};
+UserStats.prototype.queue = function (this: UserStatsInst, me: CHARACTER | USER): void {
+    let index = this.result!.length - 1;
     if (index < 0) {
-        this.result.push(this.addItem(me));
+        this.result!.push(this.addItem(me));
         return;
     }
-    let user = this.result[index];
-    if (this.result.length >= this.maxCount && this.lessThan(me,user)) {
+    let user = this.result![index];
+    if (this.result!.length >= this.maxCount && this.lessThan(me, user)) {
         return;
     }
     while (index >= 0) {
-        user = this.result[index];
+        user = this.result![index];
         if (this.lessThan(me, user)) {
-            this.result.splice(index + 1, 0, this.addItem(me));
+            this.result!.splice(index + 1, 0, this.addItem(me));
             break;
         }
         index--;
     }
     if (index < 0) {
-        this.result.splice(0, 0, this.addItem(me));
+        this.result!.splice(0, 0, this.addItem(me));
     }
-    if (this.result.length >= this.maxCount) {
-        this.result.length = this.maxCount;
+    if (this.result!.length >= this.maxCount) {
+        this.result!.length = this.maxCount;
     }
-} 
-
-//this.expStats = [];
-//this.expStatsCache = null;
-//this.expStatsTime = 0;
-
-//this.maxCount = 50;
-//this.orderExpBy = function (me, user) {
-//    return me.exp > user.exp;
-//}
-
-//this.addExpItem = function (me) {
-//    return {
-//        id: me.id,
-//        value: me.exp,
-//        name: me.color_name
-//    };
-//}
-
-//this.reStats = function (result,func) {
-//    for (let i = 0; i < WORLD.USERS.length; i++) {
-//        this.addToExpQueue(WORLD.USERS[i], result, func);
-//    }
-//    let str = [];
-//    for (let i = 0; i < result.length; i++) {
-//        let user = result[i];
-//        str.push(i + 1, "、\t", user.name, '\t', user.value, '\r\n');
-//    }
-//    let time = new Date();
-//    str.push("最后更新时间", time.getHours() + ":" + time.getMinutes());
-//    return str.join("");
-//}
-
-//this.addToExpQueue = function (me, result, func) {
-    
-//    let index = result.length - 1;
-//    if (index < 0) {
-//        result.push(func(me));
-//        return;
-//    }
-//    let user = result[index];
-//    if (result.length >= this.maxCount && user.exp > me.exp) {
-//        return;
-//    }
-//    while (index >= 0) {
-//        user = result[index];
-//        if (user.exp > me.exp) {
-//            result.splice(index + 1, 0, func(me));
-//            break;
-//        }
-//        index--;
-//    }
-//    if (index < 0) {
-//        result.splice(0, 0, func(me));
-//    }
-//    if (result.length >= this.maxCount) {
-//        result.length = this.maxCount;
-//    }
-//}
+};
