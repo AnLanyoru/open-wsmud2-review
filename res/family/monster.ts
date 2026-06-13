@@ -1,11 +1,15 @@
-this.inherits(FAMILY);
+import { FAMILY } from "../../core/skill/family.js";
+import { MONSTER } from "../../core/char/monster.js";
 
-this.id = "MONSTER";
-this.name = "怪物";
-this.call = function (player, isbad) {
+export default class extends FAMILY {
+    id = "MONSTER";
+    name = "怪物";
+
+    call(player, isbad) {
     return isbad ? "畜生" : "大仙";
 
 }
-this.call_me = function (player, isbad) {
-
+    call_me(player, isbad) {
+        return '';
+    }
 }

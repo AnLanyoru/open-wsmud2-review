@@ -1,29 +1,18 @@
-﻿this.inherits(SKILL);
-this.name = "蒙古心法";
-this.id = "mengguxinfa";
-this.grade = 2;
-this.force_rad = 0.8;
-this.desc = "蒙古士兵常用的一种心法";
-//"(\w+)"(.+?)"NOR"
-//<$1>$2</$1>
-this.can_enables = ["force"];
-this.query_enable_prop = function (lv) {
-    return {
-        force: {
-            gj: lv,
-            fy: lv,
-            limit_mp: lv * 50,
-            desc: "唯一：将你内力的80%转化为气血"
-        }
-    };
-}
+import { SKILL } from "../../../core/skill/skill.js";
 
-this.learn_condition = {
+export default class extends SKILL {
+    name = "蒙古心法";
+    id = "mengguxinfa";
+    grade = 2;
+    force_rad = 0.8;
+    desc = "蒙古士兵常用的一种心法";
+    can_enables = ["force"];
+    learn_condition = {
     skill: {
         force: 350
     }
 };
-this.slots = [
+    slots = [
     {
         prop: 'mgxf_cd',
         value: (lv) => 10,
@@ -39,8 +28,7 @@ this.slots = [
         },
     },
 ];
-
-this.pfm = {
+    pfm_set = {
     power:
     {
         name: "硬气功",
@@ -55,7 +43,7 @@ this.pfm = {
             var time = (10000 + lv * 10);
             var gj = 10 + (lv / 100);
             me.send_room("<HIy>$N大喝一声，全身真气鼓动，看似坚不可摧。</HIy>");
-            const prop = {
+            const prop = {  // todo 这里要变成键集合类型
                 fy_per: gj,
                 gj_per: gj
             };
@@ -79,3 +67,15 @@ this.pfm = {
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        force: {
+            gj: lv,
+            fy: lv,
+            limit_mp: lv * 50,
+            desc: "唯一：将你内力的80%转化为气血"
+        }
+    };
+}
+}

@@ -1,12 +1,20 @@
-﻿this.inherits(COMMAND);
-this.command = "map";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.map_json;
-this.buffer = {};
-var world_map = null;
-this.enter = function (me, area) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import {AREA} from "../../../core/room/area";
+
+export default class extends COMMAND {
+    command = "map";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    map_json;
+    buffer = {};
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, area) {
     //if (!area) {
     //    if (!this.map_json) this.map_json = getAllMaps(me);
 
@@ -19,7 +27,7 @@ this.enter = function (me, area) {
     }
     var path = area + "/"
     if (this.buffer[area]) return me.send(this.buffer[area]);
-    var area_obj = null;
+    var area_obj: AREA | null = null;
     for (var i = 0; i < WORLD.AREAS.length; i++) {
         if (path == WORLD.AREAS[i].room_path) {
             area_obj = WORLD.AREAS[i];
@@ -31,15 +39,15 @@ this.enter = function (me, area) {
     this.buffer[area] = this.createMapJson(area_obj, area);
     me.send(this.buffer[area]);
 }
-this.clearCache = function () {
+    clearCache() {
     this.buffer = {};
 }
-this.update_map = function (id, rm, pos) {
+    update_map(id, rm, pos) {
     this.buffer[id] = null;
     if (!rm) {
-        var area_obj;
+        var area_obj: AREA | null = null;
         for (var i = 0; i < WORLD.AREAS.length; i++) {
-            if (path == WORLD.AREAS[i].room_path) {
+            if (id == WORLD.AREAS[i].room_path) {
                 area_obj = WORLD.AREAS[i];
                 break;
             }
@@ -55,14 +63,18 @@ this.update_map = function (id, rm, pos) {
             rm.items[i].send(str);
     }
 }
-this.createMapJson = function (area_obj, area) {
+    createMapJson(area_obj, area) {
     if (!area_obj) return '{type:"map",maps:[]}';
-    var obj = {};
-    obj.type = "map";
-    obj.path = area;
-    obj.map = area_obj.map;
+    var obj: { type: string; path: string; map: any[] } = {
+        type: "map",
+        path: area,
+        map: area_obj.map,
+    };
     return JSON.stringify(obj);
 }
+}
+
+var world_map = null;
 function getAreaByPath(areas, path) {
     if (!areas) return;
     for (var i = 0; i < areas.length; i++) {

@@ -1,20 +1,26 @@
-﻿
-this.inherits(TASK);
-this.id = "msg";
-this.handler = null;
-this.startup = function () {
-    this.handler = this.call_out(this.run, 20 * 60000);
-}
-this.stop = function () {
-    if (this.handler) clearTimeout(this.handler);
-}
-this.msgs = [
+import fs from "fs/promises";
+import { TASK } from "../../core/task/task.js";
+import { WORLD } from "../../core/world.js";
+import { COMMAND } from "../../core/command.js";
+
+declare var __PATH: Record<string, string>;
+
+export default class extends TASK {
+    id = "msg";
+    msgs = [
     "欢迎登录，感谢你的支持，如有任何问题或建议",
     "如有BUG请提交管理员，谢谢配合"
 
 ];
-this.is_check_file = false;
-this.run = function () {
+    is_check_file = false;
+
+    startup() {
+    this.handler = this.call_out(this.run, 20 * 60000);
+}
+    stop() {
+    if (this.handler) clearTimeout(this.handler);
+}
+    run() {
     COMMAND.DO("sys", this.msgs.random());
     this.startup();
     var dt = new Date();
@@ -27,13 +33,11 @@ this.run = function () {
         this.clearyz();
     }
 }
-this.clearyz = function () {
-    WORLD.COMMANDS['checkorg'].cmd_clearmail();
-    WORLD.COMMANDS['checkorg'].cmd_clearstore();
+    clearyz() {
+    WORLD.COMMANDS['checkorg']?.cmd_clearmail?.();
+    WORLD.COMMANDS['checkorg']?.cmd_clearstore?.();
 }
-
-
-this.check_file = function () {
+    check_file() {
 
     const min1 = new Date(Date.now() - 3600000 * 24 * 7);//七天内每个一小时
     const min2 = new Date(Date.now() - 3600000 * 24 * 30);//30天内每天一个
@@ -44,21 +48,21 @@ this.check_file = function () {
     this.check_temp_files("log", (dir) => {
         dir = dir.replace("log", "").replace(".txt", "");
         let pars = dir.split('-');
-        let dt = new Date(pars[0], pars[1] - 1, pars[2]);
+        let dt = new Date(parseInt(pars[0]), parseInt(pars[1]) - 1, parseInt(pars[2]));
         return dt < min4;
     });
 
     this.check_temp_files("req", (dir) => {
         dir = dir.replace("request", "").replace(".txt", "");
         let pars = dir.split('-');
-        let dt = new Date(pars[0], pars[1] - 1, pars[2]);
+        let dt = new Date(parseInt(pars[0]), parseInt(pars[1]) - 1, parseInt(pars[2]));
         return dt < min4;
     });
     this.check_temp_files("bak", (dir) => {
         dir = dir.replace("data", "").replace(".js", "");
         let pars = dir.split('-');
         if (pars.length < 3) return false;
-        let dt = new Date(pars[0], pars[1] - 1, pars[2], pars[3]);
+        let dt = new Date(parseInt(pars[0]), parseInt(pars[1]) - 1, parseInt(pars[2]), parseInt(pars[3]));
         if (dt > min1) return false;
         if (dt > min2) {
 
@@ -76,7 +80,7 @@ this.check_file = function () {
     this.check_temp_files("temp", (dir) => {
         let pars = dir.split('-');
         if (pars.length < 5) return false;
-        let dt = new Date(pars[1], pars[2] - 1, pars[3], pars[4]);
+        let dt = new Date(parseInt(pars[1]), parseInt(pars[2]) - 1, parseInt(pars[3]), parseInt(pars[4]));
         if (dt > min2) {
             if (dt.getHours() === 5) return false;
             return true;
@@ -84,9 +88,7 @@ this.check_file = function () {
         return true;
     });
 }
-
-
-this.check_temp_files = async function (path, func) {
+    async check_temp_files(path: string, func: (dir: string) => boolean) {
     const dir = __PATH.DATA + path + "/";
     const paths = await fs.readdir(dir);
     for (var i = 0; i < paths.length; i++) {
@@ -94,4 +96,5 @@ this.check_temp_files = async function (path, func) {
             fs.unlink(dir + paths[i]);
         }
     }
+}
 }

@@ -1,10 +1,18 @@
-﻿this.inherits(COMMAND);
-this.command = "look1";
-this.allow_busy = true;
-this.allow_state = true;
-this.regex = /^(\d+)(?:\sof\s(\w+))?$/;
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+
 //只能看排行榜的物品
-this.enter = function (player, index, from) {
+export default class extends COMMAND {
+    command = "look1";
+    allow_busy = true;
+    allow_state = true;
+    regex = /^(\d+)(?:\sof\s(\w+))?$/;
+
+    /**
+     * @param {CHARACTER} player - 执行命令的角色
+     */
+    enter(player, index, from) {
     index = parseInt(index);
     if (from) {
         var paras = from.split('_');
@@ -30,3 +38,5 @@ this.enter = function (player, index, from) {
         }
     }
 }
+}
+

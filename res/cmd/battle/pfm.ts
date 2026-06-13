@@ -1,9 +1,18 @@
-﻿this.inherits(COMMAND);
-this.command = "perform";
-this.allow_busy = true;
-this.allow_faint = true;
-this.regex = /^(\w+)\.(.+?)$/;
-this.enter = function (me, sk, pfmid) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { SKILL } from "../../../core/skill/skill.js";
+import { WEAPON_TYPE } from "../../../core/const.js";
+
+export default class extends COMMAND {
+    command = "perform";
+    allow_busy = true;
+    allow_faint = true;
+    regex = /^(\w+)\.(.+?)$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, sk, pfmid) {
     if (!sk || !pfmid) return me.notify("你要使用什么绝招。");
     if (!me.skills) return me.notify("你目前没有学会任何技能。");
     var baseSkill = me.skills[sk];
@@ -54,7 +63,6 @@ this.enter = function (me, sk, pfmid) {
     }
     if (pfm.check && !pfm.check(me,
         lv, sk)) return;
-
     if (pfm.enable_skill && pfm.enable_skill != sk) {
         return me.notify(name + "需要装备为" + SKILL.get(pfm.enable_skill).name + "才可以使用。");
     }
@@ -125,7 +133,7 @@ this.enter = function (me, sk, pfmid) {
         //     me.set_temp("used_pfm", pfm.id, 20000);
         // }
         me.set_temp("used_pfm", pfm.id, 20000);
-        var time = pfm.query_releasetime(me, lv);
+        var time = pfm.query_releasetime(me, lv) ?? 0;
         if (time) me.release_time = time + now;
         else me.release_time = 0;
 
@@ -142,6 +150,7 @@ this.enter = function (me, sk, pfmid) {
 
     }
 
+}
 }
 
 const NOWEAPON = {

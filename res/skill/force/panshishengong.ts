@@ -1,32 +1,18 @@
-﻿this.inherits(SKILL);
-this.name = "磐石神功";
-this.id = "panshishengong";
-this.grade = 3;
-this.force_rad = 0.75;
-this.desc = "泰山派的内功心法";
-//"(\w+)"(.+?)"NOR"
-//<$1>$2</$1>
-this.can_enables = ["force"];
+import { SKILL } from "../../../core/skill/skill.js";
 
-this.query_enable_prop = function (lv) {
-    return {
-        force: {
-            fy: parseInt(lv * 17 / 10) + 20,
-            max_hp: lv * 8 + 100,
-            con: parseInt(lv / 7) + 2,
-            limit_mp: lv * 100,
-            desc: "唯一：将你内力的75%转化为气血"
-        }
-    };
-}
-
-this.learn_condition = {
+export default class extends SKILL {
+    name = "磐石神功";
+    id = "panshishengong";
+    grade = 3;
+    force_rad = 0.75;
+    desc = "泰山派的内功心法";
+    can_enables = ["force"];
+    learn_condition = {
     skill: {
         force: 400
     }
 };
-
-this.slots = [
+    slots = [
 
     {
         prop: "pssg_fy",
@@ -53,18 +39,17 @@ this.slots = [
         }
     }
 ];
-
-this.pfm = {
+    pfm_set = {
     power:
     {
         name: "磐石决",
-        distime: 46740,
+        distime: 60000,
         enable_skill: "force",
-        mp: 18,
-        release_time: 500,
+        mp: 20,
+        release_time: 0,
         use_type: 2,
         use: function (me, target, lv) {
-            let par = {
+            const par = {
                 fy_per: 100
             };
             let fy = me.query_prop('pssg_fy');
@@ -85,3 +70,16 @@ this.pfm = {
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        force: {
+            fy: parseInt(lv * 1.7) + 20,
+            max_hp: lv * 8 + 100,
+            con: parseInt(lv / 7) + 2,
+            limit_mp: lv * 100,
+            desc: "唯一：将你内力的75%转化为气血"
+        }
+    };
+}
+}

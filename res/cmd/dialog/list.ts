@@ -1,7 +1,13 @@
-﻿
-this.inherits(COMMAND);
-this.command = "list";
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+
+export default class extends COMMAND {
+    command = "list";
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg) {
     var target = me;
     if (arg) {
         target = me.find_obj(arg, me.environment);
@@ -41,19 +47,14 @@ this.enter = function (me, arg) {
     //        str.push('"}');
     //    }
     //}
-    var money = target.query_sell_money && target.query_sell_money(me);
-    if (money) {
-        if (money.gongji >= 0) str.push(",gongji:", money.gongji);
-        else if (money.jungong >= 0) str.push(",jungong:", money.jungong);
-        else if (money.yaoyuan >= 0) str.push(",yaoyuan:", money.yaoyuan);
-    }
     str.push(",title:\"");
-    str.push(target.sell_title || (target.name + "正在贩卖以下物品："));
-    str.push("\"");
+    str.push(target.name);
+    str.push("正在贩卖以下物品：\"");
 
     str.push(",seller:\"");
     str.push(target.id);
     str.push("\"}");
 
     me.send(str.join(""));
+}
 }
