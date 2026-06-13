@@ -1,7 +1,15 @@
-﻿this.inherits(COMMAND);
-this.command = "wk";
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
 
-this.enter = function (me) {
+export default class extends COMMAND {
+    command = "wk";
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me) {
 
     var wea = me.query_weapon();
     if (me.master) {
@@ -38,29 +46,47 @@ this.enter = function (me) {
         on_check: on_check
     });
 }
+}
 
 function on_check(me) {
     var exp = WORLD.DATA.exps[me.level]
         + WORLD.DATA.query_temp("kuang_exp", 0);
     var pot = exp + me.query_prop('gsj_qn');
-    var grade = me.query_prop('kuang1');
-    var str = "";
-    if (grade >= 80) {
-        str = "有概率挖到橙色及以下宝石";
-    } else if (grade >= 30) {
-        str = "有概率挖到紫色及以下宝石";
-    } else if (grade >= 10) {
-        str = "有概率挖到黄色及以下宝石";
-    } else {
-        str = "有概率挖到青色及以下宝石";
+    me.send(`你正在挖矿，每10秒获得${exp}经验，${pot}潜能，有概率挖到<hig>玄晶</hig>和其他宝石。`);
+}
+function calculate_lv(grade) {
+    const items = ["st/xuanjing", "st/st_red#0", "st/st_blu#0", "st/st_gre#0", "st/st_yel#0",
+        "st/st_red#1", "st/st_blu#1", "st/st_gre#1", "st/st_yel#1"];
+
+    // 玄晶(0):500, 绿宝石(1-4):90, 蓝宝石(5-8):1
+    const base = [500, 90, 90, 90, 90, 1, 1, 1, 1];
+
+    // grade小幅将绿宝石概率分配给蓝宝石和玄晶，玄晶分配更多(95%)
+    let weights = base.slice();
+    if (grade > 0) {
+        const shift = grade / 200;
+        for (let i = 1; i <= 4; i++) {
+            let loss = base[i] * shift;
+            weights[i] -= loss;
+            weights[0] += loss * 0.98;
+            let blueGain = loss * 0.02 / 4;
+            for (let j = 5; j <= 8; j++) {
+                weights[j] += blueGain;
+            }
+        }
     }
-    me.send(`你正在挖矿，当前效率${grade}，每10秒获得${exp}经验，${pot}潜能，${str}。`);
+    return UTIL.weightedChoice(items, weights);
 }
 function do_diaoyu(me) {
-    let obj = me.add_obj(query_stone_path(me));
+    let r_i = me.random(100);
+    if (r_i > 89) {
+    let obj = me.add_obj(calculate_lv(0));
     if (obj) {
         me.notify("<hig>恭喜你得到一颗" + obj.color_name + "。</hig>");
+    } else {
+        me.notify("<hig>你挖了一会儿，发现一些碎石，没有挖到宝贝。</hig>");
     }
+}
 
 
     var exp = WORLD.DATA.get_exp(me)
@@ -69,20 +95,4 @@ function do_diaoyu(me) {
     var pot = exp + me.query_prop('gsj_qn');
     me.add_exp(exp, pot, 0);
 
-}
-
-function query_stone_path(me) {
-    var colors = ["red", "blu", "gre", "yel"];
-    var max = 1;
-    var grade = me.query_prop('kuang1');
-    if (grade >= 80) {
-        max = 4;
-    } else if (grade >= 30) {
-        max = 3;
-    } else if (grade >= 10) {
-        max = 2;
-    }
-    var lv = me.random(max + 1);
-    if (lv == 0 && me.random(8) == 0) return "st/xuanjing";
-    return "st/st_" + colors[me.random(colors.length)] + "#" + lv;
 }

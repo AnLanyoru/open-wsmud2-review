@@ -1,120 +1,171 @@
-this.inherits(COMMAND);
-this.command = "update";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_level = 6;
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { NPC } from "../../../core/char/npc.js";
+import { BASE } from "../../../core/base.js";
+import { TASK } from "../../../core/task/task.js";
 
-this.enter = function (me, arg) {
-    try {
+// todo ai改过得review一下
+export default class extends COMMAND {
+    command = "update";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_level = 6;
+
+    /** 延迟更新定时器句柄 */
+    update_hander?: ReturnType<typeof setTimeout>;
+    /** 延迟更新时间 */
+    update_time?: Date;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me: CHARACTER | null, arg?: string) {
         if (!arg) return this.notify(me, "路径不合理");
         if (arg === 'room') {
             return this.update_room(me);
         } else if (arg === 'npc') {
-            return this.update_npc(me);
+            return this.update_npc(me, undefined);
         }
+        this.do_update(me, arg).then(() => {
+            this.notify(me, arg + "已更新。");
+        }).catch((e: any) => {
+            console.log(e);
+            this.notify(me, "error:" + e);
+        });
+    }
+
+    /**
+     * 执行热更新，返回Promise
+     * @param {CHARACTER | null} me
+     * @param {string} arg
+     * @returns {Promise<void>}
+     */
+    do_update(me: CHARACTER | null, arg: string): Promise<void> {
         arg = arg.replace(/\\/g, "/");
-        if (arg.startsWith("doc/")) return;
+        if (arg.startsWith("doc/")) return Promise.resolve();
         var index = arg.indexOf("/");
-        if (index == -1) return this.notify(me, "路径不合理");
+        if (index == -1) {
+            this.notify(me, "路径不合理");
+            return Promise.resolve();
+        }
         var path = __PATH.WORLD + arg.substr(0, index + 1);
         var fname = arg.substr(index + 1);
-        BASE.UPDATE(path, fname);
-        this.notify(me, arg + "已更新。");
-    } catch (e) {
-        console.log(e);
-        this.notify(me, "error:" + e);
+        return BASE.UPDATE(path, fname).then(() => {
+            BASE.CREATE(path, fname);
+        });
     }
-}
-this.notify = function (me, msg) {
-    if (me) return me.notify(msg);
-    console.log(msg);
-}
-this.update_npc = function (me, path) {
-    this.enter(me, "npc/" + path);
-    let npc = me.environment.find_obj_bypath(path);
-    if (npc) {
-        npc.destroy();
-        NPC.CREATE(path, me.environment);
-    }
-    let map = WORLD.NPC_STROE;
-    npc = map.get(path);
-    if (!npc.on_create) return;
-    let keys = map.keys();
-    path = path + "#";
-    for (let key of keys) {
-        if (key.startsWith(path)) {
-            map.delete(key);
-            me.send('delete' + key);
-        }
-    }
-}
 
-this.update_obj = function (me, path) {
-    this.enter(me, "obj/" + path);
-    let map = WORLD.OBJ_STROE;
-    let obj = map.get(path);
-    if (!obj.on_create) return;
-    let keys = map.keys();
-    path = path + "#";
-    for (let key of keys) {
-
-        if (key.startsWith(path)) {
-            map.delete(key);
-            me.send('delete' + key);
+    notify(me: CHARACTER | null, msg: string): void {
+        if (me) {
+            me.notify(msg);
+        } else {
+            console.log(msg);
         }
     }
 
-}
-this.update_room = function () {
+    update_npc(me: CHARACTER | null, path?: string) {
+        if (!path) return;
+        this.do_update(me, "npc/" + path).then(() => {
+            let map = WORLD.NPC_STROE;
+            map.delete(path!);
+            let keys = map.keys();
+            let prefix = path + "#";
+            for (let key of keys) {
+                if (key.startsWith(prefix)) {
+                    map.delete(key);
+                    if (me) me.send('delete ' + key);
+                }
+            }
+            if (me && me.environment) {
+                let npc = me.environment.find_obj_bypath(path!);
+                if (npc) {
+                    npc.destroy();
+                    NPC.CREATE(path!, me.environment);
+                }
+            }
+        }).catch((e: any) => {
+            console.log(e);
+            this.notify(me, "error:" + e);
+        });
+    }
 
+    update_obj(me: CHARACTER | null, path: string) {
+        this.do_update(me, "obj/" + path).then(() => {
+            let map = WORLD.OBJ_STROE;
+            map.delete(path);
+            let keys = map.keys();
+            let prefix = path + "#";
+            for (let key of keys) {
+                if (key.startsWith(prefix)) {
+                    map.delete(key);
+                    if (me) me.send('delete ' + key);
+                }
+            }
+        }).catch((e: any) => {
+            console.log(e);
+            this.notify(me, "error:" + e);
+        });
+    }
+
+    update_room(me?: CHARACTER | null) {
+
+    }
+
+    clear_update(): void {
+        if (this.update_hander)
+            clearTimeout(this.update_hander);
+        this.update_time = undefined;
+        console.log('clear timeout');
+    }
+
+    wait_update(me: CHARACTER, upd_time?: Date | string) {
+        if (!upd_time) return me.send('没有设置更新时间');
+        if (typeof upd_time === 'string') {
+            upd_time = new Date(upd_time);
+        }
+        let time = upd_time.getTime() - Date.now();
+        if (!(time > 10000))
+            return me.send('更新时间不能小于当前时间');
+        this.update_hander = this.call_out(this.on_update, time);
+        this.update_time = upd_time;
+        this.format_time(me, this.update_time);
+    }
+
+    format_time(me: CHARACTER, time: Date): void {
+        let str: string[] = ['已设置', time.toLocaleString(), '更新，在'];
+        let remaining = time.getTime() - Date.now();
+        if (remaining > 3600000) {
+            str.push(String(Math.floor(remaining / 3600000)), "小时");
+            remaining = remaining % 3600000;
+        }
+        if (remaining > 60000) {
+            str.push(String(Math.floor(remaining / 60000)), "分钟");
+            remaining = remaining % 60000;
+        }
+        remaining = Math.floor(remaining / 1000);
+        str.push(String(remaining), '秒后');
+        me.send(str.join(""));
+    }
+
+    on_update(): void {
+        this.update_hander = undefined;
+        this.update_time = undefined;
+    }
+
+    wait(me: CHARACTER): void {
+        let task = TASK.GET('time');
+        let updtime = new Date(2026, 1, 15, 12);
+        let time = updtime.getTime() - Date.now();
+        if (task && task.run2) {
+            task.handler = task.call_out(task.run2, Math.max(time, 0));
+        }
+        this.format_time(me, updtime);
+    }
 }
+
+const __PATH: Record<string, string> = globalThis.__PATH;
 if (WORLD.COMMANDS.update && WORLD.COMMANDS.update.clear_update) {
     WORLD.COMMANDS.update.clear_update();
-}
-this.clear_update = function () {
-    if (this.update_hander)
-        clearTimeout(this.update_hander);
-    this.update_time = null;
-    console.log('clear timeout');
-}
-this.wait_update = function (me, upd_time) {
-    if (!upd_time) return me.send('没有设置更新时间');
-    if (typeof upd_time === 'string') {
-        upd_time = new Date(upd_time);
-    }
-    let time = upd_time - Date.now();
-    if (!(time > 10000))
-        return me.send('更新时间不能小于当前时间');
-    this.update_hander = this.call_out(this.on_update, time);
-    this.update_time = upd_time;
-    this.format_time(me, this.update_time);
-}
-this.format_time = function (me, time) {
-
-    let str = ['已设置', time.toLocaleString(), '更新，在'];
-    time = time - Date.now();
-    if (time > 3600000) {
-        str.push(Math.floor(time / 3600000), "小时");
-        time = time % 3600000;
-    }
-    if (time > 60000) {
-        str.push(Math.floor(time / 60000), "分钟");
-        time = time % 60000;
-    }
-    time = Math.floor(time / 1000);
-    str.push(time, '秒后');
-    me.send(str.join(""));
-}
-this.on_update = function () {
-    this.update_hander = null;
-    this.update_time = null;
-}
-
-this.wait = function (me) {
-    let task = TASK.GET('time');
-    let updtime = new Date(2026, 1, 15, 12);
-    let time = updtime.getTime() - Date.now();
-    task.handler = task.call_out(task.run2, time);
-    this.format_time(me, updtime);
 }

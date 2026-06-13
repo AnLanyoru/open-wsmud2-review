@@ -1,21 +1,27 @@
-﻿this.inherits(OBJ);
-this.set({
-    unit: "张",
-    name: "叛师符",
-    desc: "使用后可以使脱离当前门派，门派学到的所有武功会遗忘，会返还你学习和练习技能消耗的潜能",
-    grade: 5,
-    value: 0
-});
-this.on_use = function (me) {
+import { OBJ } from "../../../core/item/obj.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { SKILL } from "../../../core/skill/skill.js";
+import { CHARACTER } from "../../../core/char/character.js";
+
+export default class extends OBJ {
+    unit = "张";
+    name = "叛师符";
+    desc = "使用后可以使脱离当前门派，门派学到的所有武功会遗忘，会返还你学习和练习技能消耗的潜能";
+    grade = 5;
+    value = 0;
+
+    on_use(me: CHARACTER): boolean | void {
     if (!me.is_player) return me.notify_fail("你不能使用" + this.name + "。");
     if (me.query_temp('tuolicd')) return me.notify_fail("你刚脱离门派没多久，频繁的背叛师门会被武林中人所不齿的。");
     if (!me.family || me.family == FAMILIES.NONE)
         return me.notify_fail("你还没有门派，不需要叛师。");
-    var list = [];
+    var list: SKILL[] = [];
     var up_count = 0;
     for (var key in me.skills) {
         var skill = SKILL.get(key);
-        if (skill.family === me.family) {
+        if (skill && skill.family === me.family) {
             let skitem = me.skills[key];
             if (skitem.ref)
                 return me.notify_fail('请先取消' + skill.query_color_name(me) + '融合的绝招。');
@@ -31,7 +37,7 @@ this.on_use = function (me) {
     if (me.query_temp("tuoli")) {
         var sum = 0;
         for (var i = 0; i < list.length; i++) {
-            var needpot = list[i].query_needexp(me.skills[list[i].id].level, me);
+            var needpot = list[i].query_needexp(me.skills![list[i].id].level, me);
             if (me.remove_skill(list[i].id)) {
                 if (needpot)
                     sum += needpot;
@@ -91,4 +97,5 @@ this.on_use = function (me) {
         return false;
     }
 
+}
 }
