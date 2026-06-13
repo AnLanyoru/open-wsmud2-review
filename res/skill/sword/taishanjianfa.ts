@@ -1,9 +1,10 @@
-﻿this.inherits(SKILL);
-this.name = "泰山剑法";
-this.id = "taishanjianfa";
-this.grade = 3;
+import { SKILL } from "../../../core/skill/skill.js";
 
-this.attack_actions = [
+export default class extends SKILL {
+    name = "泰山剑法";
+    id = "taishanjianfa";
+    grade = 3;
+    attack_actions = [
     "$N手中$w一晃，向右滑出三步，一招<HIB>「朗月无云」</HIB>，转过身来，身子微矮，$w向$n斜斜刺去",
     "$N手中$w圈转，一招<HIC>「峻岭横空」</HIC>去势奇疾，无数剑光刺向$n的$l",
     "$N突然腰一弯，挺$w向$n刺去，这一剑力劲剑疾，正是一招<HIC>「来鹤清泉」</HIC>",
@@ -12,27 +13,15 @@ this.attack_actions = [
     "$N手臂暴长，手中$w豁豁展开，刷刷两剑，指向$n，正是<GRN>「快活三里」</GRN>"
 
 ];
-this.desc = "泰山派的剑法";
-//<$1>$2</$1>
-//<$1>$2</$1>
-this.can_enables = ["sword"];
-this.learn_condition = {
+    desc = "泰山派的剑法";
+    can_enables = ["sword"];
+    learn_condition = {
     max_mp: 2000,
     skill: {
         sword: 200
     }
 };
-
-this.query_enable_prop = function (lv) {
-    return {
-        sword: {
-            gj: parseInt(lv * 15 / 10) + 10,
-            mz: parseInt(lv * 13 / 10) + 10,
-            fy: parseInt(lv * 15 / 10) + 10,
-        }
-    };
-}
-this.slots = [
+    slots = [
     {
         prop: "con",
         value: lv => 1 + parseInt(lv / 10),
@@ -49,14 +38,13 @@ this.slots = [
         }
     }
 ];
-this.pfm = {
+    pfm_set = {
     jiang:
     {
         name: "七星落长空",
-        distime: 15580,
+        distime: 22000,
         enable_skill: "sword",
-        mp: 18,
-        release_time: 608,
+        mp: 20,
         use: function (me, target, lv) {
             me.send_room("<hir>$N一招「七星落长空」挺$w向$n当胸刺去，剑光闪烁，$w发出嗡嗡之声，罩住了$n胸口“膻中”、“神藏”、“灵墟”、“神封”、“步廊”、“幽门”、“通谷”七处大穴</hir>", target);
             var count = 7;
@@ -103,3 +91,14 @@ this.pfm = {
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        sword: {
+            gj: parseInt(lv * 1.5) + 10,
+            mz: parseInt(lv * 1.3) + 10,
+            fy: parseInt(lv * 1.5) + 10,
+        }
+    };
+}
+}

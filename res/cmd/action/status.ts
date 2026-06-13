@@ -1,11 +1,19 @@
-﻿this.inherits(COMMAND);
-this.command = "status";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.allow_faint = true;
-this.regex = /^(\w+)(?:\s(\w+))?$/;
-this.enter = function (me, type, tid) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { UTIL } from "../../../core/util/util.js";
+
+export default class extends COMMAND {
+    command = "status";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    allow_faint = true;
+    regex = /^(\w+)(?:\s(\w+))?$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, type, tid) {
     if (type) {
         var target = me;
         if (tid) {
@@ -15,19 +23,13 @@ this.enter = function (me, type, tid) {
 
         if (!target.status) return me.send("没有这个状态。");
 
-        var status = null;
-        for (var i = 0; i < target.status.length; i++) {
-            if (target.status[i].id == type) {
-                status = target.status[i];
-                break;
-            }
-        }
+        const status = target.status.find(s => s.id == type);
         if (!status) return me.send("没有这个状态。");
-        var str = [];
+        const str: string[] = [];
         str.push(status.downside ? "<red>" : "<hig>");
         str.push(status.name);
         if (status.override == 1) {
-            str.push(UTIL.to_c(status.count));
+            str.push(UTIL.to_c(status.count ?? 0));
             str.push("层");
         }
 
@@ -37,8 +39,10 @@ this.enter = function (me, type, tid) {
             str.push("\n");
         }
         str.push(status.downside ? "<red>" : "<hig>");
-        str.push(UTIL.prop_toString(status.prop, "\n", status.count));
+        str.push(UTIL.prop_toString(status.prop ?? null, "\n", status.count));
         str.push(status.downside ? "</red>\n" : "</hig>\n");
         me.send(str.join(""));
     }
 }
+}
+

@@ -1,9 +1,13 @@
-﻿this.inherits(SKILL);
-this.name = "太极拳";
-this.id = "taijiquan";
-this.family = FAMILIES.WUDANG;
-this.grade = 3;
-this.attack_actions = ["$N使一招「<YEL>揽雀尾</YEL>」，双手划了个半圈，按向$n的$l",
+import { SKILL } from "../../../core/skill/skill.js";
+import { FAMILIES } from "../../../core/skill/family.js";
+import { WEAPON_TYPE } from "../../../core/const.js";
+
+export default class extends SKILL {
+    name = "太极拳";
+    id = "taijiquan";
+    family = FAMILIES.WUDANG;
+    grade = 3;
+    attack_actions = ["$N使一招「<YEL>揽雀尾</YEL>」，双手划了个半圈，按向$n的$l",
     "$N使一招「<RED>单鞭</RED>」，右手收置肋下，左手向外挥出，劈向$n的$l",
     "$N左手回收，右手由钩变掌，由右向左，使一招「<HIB>提手上式</HIB>」，向$n的$l打去",
     "$N双手划弧，右手向上，左手向下，使一招「<WHT>白鹤亮翅</WHT>」，分击$n的面门和$l",
@@ -35,7 +39,7 @@ this.attack_actions = ["$N使一招「<YEL>揽雀尾</YEL>」，双手划了个�
     "$N双手在胸前翻掌，由腹部向前向上推出，一招「<YEL>如封似闭</YEL>」，一股劲风直逼$n"
 
 ];
-this.parry_actions = [
+    parry_actions = [
     "$p眼见$P$w攻到，当即使出一招「揽雀尾」，右脚实，左脚虚，运起“挤”字诀，粘连粘随，右掌已搭住$P左腕，横劲发出。$N身不由主的向前一冲，跨出两步，方始站定。",
     "不料$p双手一圈，如抱太极，一股雄浑无比的力道组成了一个旋涡，只带得$P在原地急转七八下。",
     "$p「双风贯耳」，连消带打，双手成圆形击出，随即左圈右圈，一个圆圈跟着一个圆圈，大圈、小圈、平圈、立圈、正圈、斜圈，一个个太极圆圈发出，登时便套得$P跌跌撞撞，身不由主的立足不稳。",
@@ -46,46 +50,15 @@ this.parry_actions = [
     "$p当即双掌一扬，迎着$w接去，待得手掌与$P$w将触未触之际，施出「揽雀尾式」，将$w轻轻拢住，脚下“金鸡独立式”，左足关地，右足悬空，全身急转，宛似一枚陀螺。",
     "就在这电光石火的一瞬之间，$p身子一弓，正是「白鹤亮翅」的前半招，$P的劲力登时落空。",
 ];
-this.can_enables = ["unarmed", "parry"];
-this.query_enable_prop = function (lv) {
-    return {
-        unarmed: {
-            gj: parseInt(lv * 1.3 + 5),
-            mz: parseInt(lv * 1.3 + 5),
-            str: parseInt(lv / 8)
-        }, parry: {
-            zj: parseInt(lv * 1.6 + 20),
-            fy: lv * 2 + 10,
-            max_hp: lv * 10,
-            desc: "当你成功招架后，立刻反击敌人，8秒冷却"
-        }
-    };
-}
-this.learn_condition = {
+    can_enables = ["unarmed", "parry"];
+    learn_condition = {
     max_mp: 1000,
     skill: {
         unarmed: 300,
         taijishengong: 100
     }
 };
-this.on_parry_over = function (me, target, par) {
-    if (par.is_parry) {
-        if (!me.query_temp("sk_taijiquan")) {
-            me.do_attack({
-                target: target,
-                attack_msg: "<hiy>$N化守为攻，双手一推一放，顺着$n的攻击把劲气引向$p！</hiy>",
-                no_append: true,
-                no_append_target: true,
-                no_weapon: true
-
-            });
-            me.end_attack(target);
-            me.set_temp("sk_taijiquan", 1, 8000);
-        }
-    }
-}
-
-this.pfm = {
+    pfm_set = {
     zhen:
     {
         name: "震字决",
@@ -116,3 +89,36 @@ this.pfm = {
         }
     }
 };
+
+    query_enable_prop(lv) {
+    return {
+        unarmed: {
+            gj: parseInt(lv * 1.3 + 5),
+            mz: parseInt(lv * 1.3 + 5),
+            str: parseInt(lv / 8)
+        }, parry: {
+            zj: parseInt(lv * 1.6 + 20),
+            fy: lv * 2 + 10,
+            max_hp: lv * 10,
+            desc: "当你成功招架后，立刻反击敌人，8秒冷却"
+        }
+    };
+}
+    on_parry_over(me, target, par) {
+    if (par.is_parried) {
+        if (!me.query_temp("sk_taijiquan")) {
+            me.do_attack({
+                target: target,
+                attack_msg: "<hiy>$N化守为攻，双手一推一放，顺着$n的攻击把劲气引向$p！</hiy>",
+                no_append: true,
+                no_append_target: true,
+                no_weapon: true
+
+            });
+            me.end_attack(target);
+            me.set_temp("sk_taijiquan", 1, 8000);
+        }
+    }
+}
+}
+

@@ -1,8 +1,16 @@
-﻿
-this.inherits(COMMAND);
-this.command = "store";
-this.regex = /^(?:(\d+)\s)?(\w+)$/;// /^(?:(\d+))?(?:\s+(\w+))?$/;
-this.enter = function (me, count, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+
+export default class extends COMMAND {
+    command = "store";
+    regex = /^(?:(\d+)\s)?(\w+)$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, count, arg) {
     if (arg && arg.length < 2) {
         count = arg;
         arg = null;
@@ -17,7 +25,8 @@ this.enter = function (me, count, arg) {
         }
         target.stores = target.stores || [];
         if (arg === 'all') return this.store_all(target, me);
-        let move_item = me.find_obj(arg), store_item = null;
+        let move_item = me.find_obj(arg);
+        let store_item: import("../../../core/item.js").ITEM | null = null;
         if (!move_item) return me.notify("你要存什么东西？");
 
         const st = { items: target.stores, push_item: me.push_item };
@@ -92,8 +101,7 @@ this.enter = function (me, count, arg) {
 
     me.send(str.join(""));
 }
-
-this.store_all = function (target, me) {//target仓库所有人=玩家 me玩家或者随从
+    store_all(target, me) {//target仓库所有人=玩家 me玩家或者随从
     // if (me !== notifier) return;
     if (me.query_temp('store_all'))
         return me.send('背包的道具已经自动合并到仓库中。');
@@ -120,3 +128,5 @@ this.store_all = function (target, me) {//target仓库所有人=玩家 me玩家�
     me.send('你将背包中的道具自动合并到仓库中已有的道具。');
     me.set_temp('store_all', 1, 6000);
 }
+}
+
