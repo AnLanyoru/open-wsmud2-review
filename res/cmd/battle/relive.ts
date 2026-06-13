@@ -1,7 +1,16 @@
-﻿this.inherits(COMMAND);
-this.command = "relive";
-this.allow_die = true;
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { UTIL } from "../../../core/util/util.js";
+import { ROOM } from "../../../core/room/room.js";
+import { USER } from "../../../core/char/user.js";
+
+export default class extends COMMAND {
+    command = "relive";
+    allow_die = true;
+
+
+    enter(me, arg) {
     if (!WORLD.is_server(me)) {
         return WORLD.on_cross_user_relive(me);
     }
@@ -107,3 +116,5 @@ this.enter = function (me, arg) {
         }
     }
 }
+}
+

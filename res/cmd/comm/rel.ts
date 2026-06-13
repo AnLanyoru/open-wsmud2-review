@@ -1,10 +1,19 @@
-this.inherits(COMMAND);
-this.command = "rel";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.regex = /^(\w+)?(?:\s+(\w+))?$/;
-this.enter = function (me, type, cmd) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { FOLLOWER } from "../../../core/char/follower.js";
+
+export default class extends COMMAND {
+    command = "rel";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    regex = /^(\w+)?(?:\s+(\w+))?$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, type, cmd) {
     if (type === 'marry') {
         return me.send('解除夫妻关系，需要到扬州城的衙门找户部主簿办理。');
     }
@@ -23,26 +32,13 @@ this.enter = function (me, type, cmd) {
             target.set_state(null);
             return WORLD.COMMANDS.relation.enter(me);
         }
+        if (target.state) return me.send(target.name + "正在" + target.state.title + "。");
         let home = me.query_temp('home');
         if (!home) return me.send('你还没购买住宅。');
+        if (home !== 2) return me.send('你的住宅没有随从工作的地方。');
         if (target.environment && target.environment.is_fb()) {
             return me.send(target.name + "正在副本中。");
         }
-        if (cmd === 'team') {
-            if (!me.environment || me.environment.parent.id !== 'home') {
-                return me.send('需要在住宅里召唤随从组队。');
-            }
-            if (target.state && target.set_state) target.set_state(null, true);
-            if (target.state) return me.send(target.name + "正在" + target.state.title + "。");
-            if (target.hp <= 0) target.hp = 1;
-            if (target.environment !== me.environment) {
-                target.moveto(me.environment, target.name + "离开了。", target.name + "走了过来。");
-            }
-            WORLD.COMMANDS.team.add_follower_to_team(me, target);
-            return WORLD.COMMANDS.relation.enter(me);
-        }
-        if (target.state) return me.send(target.name + "正在" + target.state.title + "。");
-        if (home !== 2) return me.send('你的住宅没有随从工作的地方。');
 
         if (cmd === 'diaoyu' || cmd === 'caiyao' || cmd === 'wk') {
 
@@ -83,7 +79,7 @@ this.enter = function (me, type, cmd) {
         }
     }
 }
-
+}
 
 function query_er(me) {
     for (var i = 0; i < me.items.length; i++) {

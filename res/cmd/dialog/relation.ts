@@ -1,9 +1,19 @@
-﻿this.inherits(COMMAND);
-this.command = "relation";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.enter = function (me, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { FOLLOWER } from "../../../core/char/follower.js";
+import {USER} from "../../../core/char/user";
+
+export default class extends COMMAND {
+    command = "relation";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, arg) {
 
     var str = ['{"type":"dialog","dialog":"relation"'];
     if (me.query_temp("shifu")) {
@@ -46,27 +56,27 @@ this.enter = function (me, arg) {
         }
     }
     if (me.query_temp("st_leave")) {
-        var time = new Date(me.temp["st_leave"].e) - Date.now();
+        var time = (me.temp?.["st_leave"]?.e ?? Date.now()) - Date.now();
         str.push(",reward:\"你需要");
-        str.push(parseInt(time / 3600000));
+        str.push(String(Math.floor(time / 3600000)));
         str.push("小时");
-        str.push(parseInt((time % 3600000) / 60000));
+        str.push(String(Math.floor((time % 3600000) / 60000)));
         str.push("分后才可以另行收徒或拜师\"");
     }
     if (me.query_temp("husband")) {
-        var husband = null;// WORLD.getUser(me.query_temp("husband"));
+        var husband: USER | null = null;// WORLD.getUser(me.query_temp("husband"));
         str.push(",husband:\"");
         if (husband) {
-            str.push(husband.color_name);
+            str.push(husband.color_name ?? "");
         } else {
             str.push(me.query_temp("husband_n"));
         }
         str.push("\"");
     } else if (me.query_temp("wife")) {
-        var wife = null;// WORLD.getUser(me.query_temp("wife"));
+        var wife: USER | null = null;// WORLD.getUser(me.query_temp("wife"));
         str.push(",wife:\"");
         if (wife) {
-            str.push(wife.color_name);
+            str.push(wife.color_name ?? "");
         } else {
             str.push(me.query_temp("wife_n"));
         }
@@ -80,7 +90,7 @@ this.enter = function (me, arg) {
             if (follower) {
                 str.push('["', follower.long_name(), '","', follower.id, '"');
                 if (follower.state) {
-                    str.push(',"', follower.state.title, '",', now - follower.state.stime);
+                    str.push(',"', follower.state.title, '",', String(now - follower.state.stime));
                 }
                 str.push('],');
             }
@@ -92,3 +102,5 @@ this.enter = function (me, arg) {
     str.push("}");
     me.send(str.join(""));
 }
+}
+

@@ -1,18 +1,29 @@
-﻿this.inherits(COMMAND);
-this.command = "qu";
-this.regex = /^(?:(\d+\s+))?(\w+)$/;
-this.enter = function (me, count, arg) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { UTIL } from "../../../core/util/util.js";
+import { ITEM } from "../../../core/item.js";
+import {OBJ} from "../../../core/item/obj";
+
+export default class extends COMMAND {
+    command = "qu";
+    regex = /^(?:(\d+\s+))?(\w+)$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, count, arg) {
     if (!me.environment.allow_store) return me.notify("这里没有仓库。");
 
     if (!arg) return me.notify("你要取什么东西？");
 
     me.items = me.items || [];
-    var obj = {};
-    obj.remove_item_byid = me.remove_item_byid;
-    obj.items = me.stores || [];
-    var move_count = 1;
+    let obj = {
+        remove_item_byid: me.remove_item_byid.bind(me),
+        items: me.stores || [],
+    };
+    let move_count = 1;
     if (count) move_count = parseInt(count);
-    var moved_obj = obj.remove_item_byid(arg, move_count);
+    let moved_obj = obj.remove_item_byid(arg, move_count);
     if (!moved_obj) return me.notify("你的仓库里没有这样东西。");
 
     moved_obj = me.push_item(moved_obj);
@@ -22,3 +33,5 @@ this.enter = function (me, count, arg) {
     me.notify('{type:"dialog",dialog:"list",id:"' + moved_obj.id + '",storeid:"' + arg + '",store:' + (-move_count) + '}');
 
 }
+}
+

@@ -1,10 +1,19 @@
-﻿this.inherits(COMMAND);
-this.command = "setting";
-this.allow_busy = true;
-this.allow_state = true;
-this.allow_die = true;
-this.regex = /^(?:(\w+)?\s+(.+))?$/;
-this.enter = function (me, key, value) {
+import { COMMAND } from "../../../core/command.js";
+import { CHARACTER } from "../../../core/char/character.js";
+import { WORLD } from "../../../core/world.js";
+import { NPC } from "../../../core/char/npc.js";
+
+export default class extends COMMAND {
+    command = "setting";
+    allow_busy = true;
+    allow_state = true;
+    allow_die = true;
+    regex = /^(?:(\w+)?\s+(.+))?$/;
+
+    /**
+     * @param {CHARACTER} me - 执行命令的角色
+     */
+    enter(me, key, value) {
     if (!me.is_player) return;
     if (!key) {
         var str = ['{type:"setting",items:{'];
@@ -43,7 +52,7 @@ this.enter = function (me, key, value) {
 
 
         if (key == "no_message") {
-            me.no_message = (value == 1) ? true : false;
+            me.no_message = (value == 1);
         }
         me.set_setting(key, value);
 
@@ -75,7 +84,7 @@ this.enter = function (me, key, value) {
         //}
     }
 }
-this.clear = function (me) {
+    clear(me) {
     let str = [];
     for (let user of WORLD.USERS) {
         if (!user.settings) continue;
@@ -88,6 +97,8 @@ this.clear = function (me) {
     }
     if (me) me.send(str.join(''));
 }
+}
+
 const setting_keys = {
     'hide_roomdesc': {
         type: "Boolean",
@@ -111,7 +122,7 @@ const setting_keys = {
 
     },
     'keep_msg': {
-        type: "Boolean",
+        type: "Boolean", 
         desc: "切换房间时不清空上房间信息"
 
     }, 'off_move': {
@@ -226,6 +237,10 @@ const setting_keys = {
     }, 'hide_equip': {
         type: "Boolean",
         desc: "隐藏自己的装备"
+    }, 
+    'show_send': {
+        type: "Boolean",
+        desc: "显示发送的指令"
     },
     'off_fight': {
         type: "Boolean",
@@ -275,6 +290,11 @@ const setting_keys = {
     }, 'off_pty': {
         type: "Boolean",
         desc: "屏蔽帮派频道"
+
+    },
+    'float_dialog': {
+        type: "Boolean",
+        desc: "NPC对话选项浮动显示"
 
     },
     'auto_get': {
